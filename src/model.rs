@@ -3,6 +3,27 @@ use crate::mass::Mass;
 use crate::spring::Spring;
 use crate::world::{ WorldConfig };
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum PhyzzyModelError {
+    SelfConnection(usize),
+    OutOfBounds { spring_ma: usize, spring_mb: usize, n_masses: usize },
+}
+
+impl std::fmt::Display for PhyzzyModelError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SelfConnection(idx) => write!(f, "Spring cannot connect mass {} to itself", idx),
+            Self::OutOfBounds { spring_ma, spring_mb, n_masses } => {
+                write!(f, "Spring indices ({}, {}) out of bounds (n_masses = {})",
+                       spring_ma, spring_mb, n_masses)
+
+            }
+        }
+    }
+}
+
+impl std::error::Error for PhyzzyModelError {}
+
 /*
  * The model struct holds the model made of springs and masses.
  */
@@ -26,8 +47,26 @@ impl Model {
         self.masses.push(mass);
     }
 
-    pub fn new_spring(&mut self, spring: Spring) {
+    pub fn new_spring(&mut self, spring: Spring) -> Result<(), PhyzzyModelError> {
+        let a = spring.get_ma();
+        let b = spring.get_mb();
+        let len = self.masses.len();
+
+        if a == b {
+            return Err(PhyzzyModelError::SelfConnection(a));
+        }
+        if a >= len || b >= len {
+            return Err(PhyzzyModelError::OutOfBounds {
+                spring_ma: a,
+                spring_mb: b,
+                n_masses: len
+
+            });
+        }
+
         self.springs.push(spring);
+        Ok(())
+
     }
 
     pub fn del_mass(&mut self, i_m: usize) {
@@ -105,5 +144,56 @@ impl Model {
     // Allows for another function to modify masses.
     pub(crate) fn masses_mut(&mut self) -> &mut Vec<Mass> {
         &mut self.masses
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::v2d::V2D;
+
+    #[test]
+    fn test_add_spring_out_of_bounds() {
+        let mut model = Model::new(0.0, 0.0);
+        model.new_mass(Mass::new(1.0, 0.5, &V2D::new(0.0, 0.0)));
+        let result = model.new_spring(Spring::new(1.0, 0.0, 0.0, 0, 1));
+
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err(),
+            PhyzzyModelError::OutOfBounds {
+                spring_ma: 0,
+                spring_mb: 1,
+                n_masses: 1
+            }
+        );
+    }
+
+    #[test]
+    fn test_add_self_connection() {
+        let mut model = Model::new(0.0, 0.0);
+        model.new_mass(Mass::new(1.0, 0.5, &V2D::new(0.0, 0.0)));
+
+        let result = model.new_spring(Spring::new(1.0, 0.0, 0.0, 0, 0));
+
+        assert_eq!(result.unwrap_err(), PhyzzyModelError::SelfConnection(0)); // trying to connect to same mass.
+    }
+
+
+    #[test]
+    fn test_remove_mass_cleans_springs() {
+        let mut model = Model::new(0.0, 0.0);
+        model.new_mass(Mass::new(1.0, 0.1, &V2D::new(0.0, 0.0)));
+        model.new_mass(Mass::new(1.0, 0.1, &V2D::new(1.0, 0.0)));
+        model.new_mass(Mass::new(1.0, 0.1, &V2D::new(2.0, 0.0)));
+
+        let ins_result = model.new_spring(Spring::new(1.0, 50.0, 0.0, 1, 2));
+
+
+        model.del_mass(1); // removes middle mass
+
+        // Spring should be gone
+        assert!(ins_result.is_ok());
+        assert_eq!(model.springs.len(), 0);
     }
 }

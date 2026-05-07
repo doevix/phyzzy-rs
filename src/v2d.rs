@@ -138,3 +138,30 @@ impl MulAssign for V2D {
         self.y *= rhs.y;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_abs_diff_eq;
+
+    #[test]
+    fn test_v2d_dot() {
+        let a = V2D::new(1.0, 2.0);
+        let b = V2D::new(3.0, 4.0);
+        assert_abs_diff_eq!(a.dot(b), 11.0, epsilon = 1e-9);
+    }
+
+    #[test]
+    fn test_v2d_unit_normalization() {
+        let v = V2D::new(3.0, 4.0);
+        let u = v.unit();
+        assert_abs_diff_eq!(u.mag(), 1.0, epsilon = 1e-9);
+
+    }
+
+    #[test]
+    fn test_v2d_unit_zero() {
+        let u = V2D::null().unit();
+        assert_abs_diff_eq!(u.mag(), 0.0, epsilon = 1e-9);
+    }
+}
