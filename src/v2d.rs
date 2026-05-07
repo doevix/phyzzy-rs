@@ -3,7 +3,7 @@
 */
 use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign, SubAssign, MulAssign};
 
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq, Debug)]
 pub struct V2D {
     pub x: f64,
     pub y: f64,

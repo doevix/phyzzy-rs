@@ -1,0 +1,109 @@
+use crate::v2d::V2D;
+use crate::mass::Mass;
+use crate::spring::Spring;
+use crate::world::{ WorldConfig };
+
+/*
+ * The model struct holds the model made of springs and masses.
+ */
+pub struct Model {
+    pub wave_speed: f64,
+    pub wave_amplitude: f64,
+    masses: Vec<Mass>,
+    springs: Vec<Spring>,
+}
+
+impl Model {
+    pub fn new(wave_speed: f64, wave_amplitude: f64) -> Self {
+        Self {
+            wave_speed, wave_amplitude,
+            masses: Vec::new(),
+            springs: Vec::new(),
+        }
+    }
+
+    pub fn new_mass(&mut self, mass: Mass) {
+        self.masses.push(mass);
+    }
+
+    pub fn new_spring(&mut self, spring: Spring) {
+        self.springs.push(spring);
+    }
+
+    pub fn del_mass(&mut self, i_m: usize) {
+        if i_m >= self.masses.len() { return; }
+
+        let tail_idx = self.masses.len() - 1;
+        // swap at index with last element and remove it.
+        self.masses.swap_remove(i_m);
+
+        // for clean removal, springs with deleted mass need to be collected
+        let mut to_del = Vec::new();
+        for (idx, spring) in self.springs.iter().enumerate() {
+            if spring.get_ma() == i_m || spring.get_mb() == i_m {
+                to_del.push(idx);
+            }
+        }
+
+        // delete collected springs in reverse order.
+        for rem in to_del.into_iter().rev() {
+            self.springs.swap_remove(rem);
+        }
+
+        // renumber remaining springs.
+        for spring in &mut self.springs {
+            if spring.get_ma() == tail_idx { spring.set_ma(i_m); }
+            if spring.get_mb() == tail_idx { spring.set_mb(i_m); }
+        }
+
+    }
+
+    pub fn del_spring(&mut self, i_s: usize) {
+        if i_s < self.springs.len() { self.springs.swap_remove(i_s); }
+    }
+
+    pub fn get_mass(&self, idx: usize) -> Mass {
+        self.masses[idx]
+    }
+
+    pub fn get_spring(&self, idx: usize) -> Spring {
+        self.springs[idx]
+    }
+
+    pub fn clear_forces(&mut self) {
+        for mass in &mut self.masses {
+            mass.f = V2D::null();
+        }
+    }
+
+    pub fn apply_spring_f(&mut self, dt: f64) {
+        for spring in &mut self.springs {
+            let a = &self.masses[spring.get_ma()];
+            let b = &self.masses[spring.get_mb()];
+            let ab = b.p_i - a.p_i;
+            let l = ab.mag();
+            let v_a = a.p_i - a.p_o;
+            let v_b = b.p_i - b.p_o;
+
+            // Force calculations for springing and dampening.
+            let f_spr = (ab / l) * (spring.r - l) * spring.k;
+            let f_dmp = ((v_b - v_a) / dt).pjt(ab) * spring.d;
+
+            self.masses[spring.get_ma()].f += f_spr + f_dmp;
+            self.masses[spring.get_mb()].f -= f_spr + f_dmp;
+        }
+    }
+
+    pub fn apply_world_f(&mut self, w_cfg: &WorldConfig, dt: f64) {
+        for mass in &mut self.masses {
+            let f_weight = w_cfg.gravity * mass.m;
+            let f_drag = mass.vel(dt) * -w_cfg.drag;
+
+            mass.f += f_weight + f_drag;
+        }
+    }
+    // Allows for another function to modify masses.
+    pub(crate) fn masses_mut(&mut self) -> &mut Vec<Mass> {
+        &mut self.masses
+    }
+}
