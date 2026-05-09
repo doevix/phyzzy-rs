@@ -101,6 +101,10 @@ impl Model {
         if i_s < self.springs.len() { self.springs.swap_remove(i_s); }
     }
 
+    pub fn get_masses(&self) -> &Vec<Mass> {
+        &self.masses
+    }
+
     pub fn get_mass(&self, idx: usize) -> Mass {
         self.masses[idx]
     }
@@ -125,7 +129,7 @@ impl Model {
             let v_b = b.p_i - b.p_o;
 
             // Force calculations for springing and dampening.
-            let f_spr = (ab / l) * (spring.r - l) * spring.k;
+            let f_spr = (ab / l) * (l - spring.r) * spring.k;
             let f_dmp = ((v_b - v_a) / dt).pjt(ab) * spring.d;
 
             self.masses[spring.get_ma()].f += f_spr + f_dmp;
