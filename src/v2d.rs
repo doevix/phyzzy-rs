@@ -68,6 +68,13 @@ impl V2D {
     pub fn are_equal(&self, c: V2D) -> bool {
         self.x == c.x && self.y == c.y
     }
+
+    // Linear transformation according to matrix
+    // [a b][x]
+    // [c d][y]
+    pub fn tf(&self, a: f64, b: f64, c: f64, d: f64) -> V2D {
+        V2D::new(a * self.x + c * self.y, b * self.x + d * self.y)
+    }
 }
 
 /*
