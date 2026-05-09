@@ -59,6 +59,11 @@ impl V2D {
         self / mag
     }
 
+    // Get the slope.
+    pub fn slope(self) -> f64 {
+        self.y / self.x
+    }
+
     // Compare with another vector.
     pub fn are_equal(&self, c: V2D) -> bool {
         self.x == c.x && self.y == c.y
