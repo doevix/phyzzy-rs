@@ -25,19 +25,53 @@ impl std::fmt::Display for PhyzzyModelError {
 impl std::error::Error for PhyzzyModelError {}
 
 /*
+ * Actuators follow a waveform and change the spring properties.
+ */
+pub enum SpringActuator {
+    SpringClassicMuscle {
+        spring: usize,
+        phase: f64,
+        sense: f64,
+    },
+    SpringRelaxationMuscle{
+        spring: usize,
+        phase: f64,
+        sense: f64,
+    },
+}
+
+pub enum MassActuator {
+    MassBalloon {
+        mass: usize,
+        phase: f64,
+        sense: f64,
+    },
+    MassTank {
+        mass: usize,
+        phase: f64,
+        sense: f64,
+    },
+}
+
+/*
  * The model struct holds the model made of springs and masses.
  */
 pub struct Model {
     pub wave_speed: f64,
     pub wave_amplitude: f64,
+    pub muscles: Vec<SpringActuator>,
+    pub bladders: Vec<MassActuator>,
     masses: Vec<Mass>,
     springs: Vec<Spring>,
+
 }
 
 impl Model {
     pub fn new(wave_speed: f64, wave_amplitude: f64) -> Self {
         Self {
             wave_speed, wave_amplitude,
+            muscles: Vec::new(),
+            bladders: Vec::new(),
             masses: Vec::new(),
             springs: Vec::new(),
         }
