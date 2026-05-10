@@ -135,10 +135,12 @@ impl Model {
         if i_s < self.springs.len() { self.springs.swap_remove(i_s); }
     }
 
+    // Returns the masses, avoid modifying externally.
     pub fn get_masses(&self) -> &Vec<Mass> {
         &self.masses
     }
 
+    // Returns the springs, avoid modifying externally.
     pub fn get_springs(&self) -> &Vec<Spring> {
         &self.springs
     }
