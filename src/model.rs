@@ -1,7 +1,7 @@
 use crate::v2d::V2D;
 use crate::mass::Mass;
 use crate::spring::Spring;
-use crate::world::{ WorldConfig };
+use crate::world::{ World, WorldConfig };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PhyzzyModelError {
@@ -116,7 +116,49 @@ impl Model {
     pub fn get_spring(&self, idx: usize) -> Spring {
         self.springs[idx]
     }
+    // Simulation step to calculate and update the model.
+    pub fn step(&mut self, dt: f64, world: &World, w_cfg: &WorldConfig) {
+        let dt2 = dt * dt;
 
+        // Force application.
+        self.clear_forces();
+        self.apply_spring_f(dt);
+        self.apply_world_f(w_cfg, dt);
+
+        // Verlet integration
+        for mass in &mut self.masses {
+            if mass.fixed { continue; }
+
+
+            // Boundary collisions.
+            for bound in &world.bounds {
+                // Catch boundary crossing
+                let mass_to_boundp = mass.p_i - bound.pos;
+                let seg_dist_signed = mass_to_boundp.dot(bound.nrm);
+                let seg_dist_abs = seg_dist_signed.abs();
+
+                // Correct positions.
+                if seg_dist_abs < mass.r {
+                    let overlap = mass.r - seg_dist_abs;
+                    let push_dir = if seg_dist_signed > 0.0 { bound.nrm } else { -bound.nrm };
+                    mass.p_i += push_dir * overlap;
+
+                    // TODO: make a general case for subtracting mass's weight
+                    // mass.f -= V2D::new(0.0, mass.f.y);
+                    let surf_norm = mass.f.pjt(bound.nrm);
+                    mass.f += surf_norm;
+                    mass.p_o = mass.p_i;
+                }
+            }
+
+            // Verlet calculation.
+            let p_i_o = mass.p_i;
+            mass.p_i = mass.p_i * 2.0 - mass.p_o + (mass.f / mass.m) * dt2;
+            mass.p_o = p_i_o;
+
+        }
+
+    }
     pub fn clear_forces(&mut self) {
         for mass in &mut self.masses {
             mass.f = V2D::null();
