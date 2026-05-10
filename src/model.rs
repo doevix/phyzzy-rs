@@ -170,18 +170,24 @@ impl Model {
                 let mass_to_boundp = mass.p_i - bound.pos;
                 let seg_dist_signed = mass_to_boundp.dot(bound.nrm);
                 let seg_dist_abs = seg_dist_signed.abs();
-
                 // Correct positions.
                 if seg_dist_abs < mass.r {
                     let overlap = mass.r - seg_dist_abs;
                     let push_dir = if seg_dist_signed > 0.0 { bound.nrm } else { -bound.nrm };
                     mass.p_i += push_dir * overlap;
 
-                    // TODO: make a general case for subtracting mass's weight
-                    // mass.f -= V2D::new(0.0, mass.f.y);
-                    let surf_norm = mass.f.pjt(bound.nrm);
-                    mass.f += surf_norm;
-                    mass.p_o = mass.p_i;
+                    let m_vel = mass.diff_p();
+                    let m_vel_pjt_bnrm = m_vel.pjt(bound.nrm);
+                    let m_vel_pjt_b = m_vel.pjt(bound.nrm.prp());
+                    // let reflection = m_vel_pjt_bnrm * (1.0 + bound.refl);
+                    let reflection = m_vel_pjt_b - m_vel_pjt_bnrm * bound.refl;
+                    let p_o = mass.p_i - reflection;
+
+                    let surface_norm = mass.f.pjt(bound.nrm);
+                    // TODO: fix weird chatter with springed masses.
+                    let f_bound = mass.f.pjt(bound.nrm.prp());
+                    mass.f += surface_norm + f_bound;
+                    mass.p_o = p_o;
                 }
             }
 
