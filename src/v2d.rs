@@ -52,6 +52,11 @@ impl V2D {
         r * (self.dot(r) / r.mag2())
     }
 
+    // Get a perpendicular vector.
+    pub fn prp(&self) -> V2D {
+        V2D::new(-self.y, self.x)
+    }
+
     // Normalization, get unit vector.
     pub fn unit(self) -> V2D {
         let mag = self.mag();
