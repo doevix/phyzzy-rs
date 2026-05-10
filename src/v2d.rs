@@ -114,6 +114,18 @@ impl Sub for V2D {
     }
 }
 
+// Left sided scalar multiplication.
+impl Mul<V2D> for f64 {
+    type Output = V2D;
+    fn mul(self, s: V2D) -> V2D{
+        V2D {
+            x: self * s.x,
+            y: self * s.y,
+        }
+    }
+}
+
+// Ridght sided scalar multiplication.
 impl Mul<f64> for V2D {
     type Output = Self;
     fn mul(self, s: f64) -> Self {
@@ -189,5 +201,15 @@ mod tests {
     fn test_v2d_unit_zero() {
         let u = V2D::null().unit();
         assert_abs_diff_eq!(u.mag(), 0.0, epsilon = 1e-9);
+    }
+
+    #[test]
+    fn test_v2d_commutative_multiply() {
+        let v = V2D::new(3.0, 4.0);
+        let s = 12.0;
+        let res1 = v * s;
+        let res2 = s * v;
+        assert_abs_diff_eq!(res1.x, res2.x, epsilon = 1e-9);
+        assert_abs_diff_eq!(res1.y, res2.y, epsilon = 1e-9);
     }
 }
