@@ -191,10 +191,6 @@ impl Model {
             mass.f += f_weight + f_drag;
         }
     }
-    // Allows for another function to modify masses.
-    pub(crate) fn masses_mut(&mut self) -> &mut Vec<Mass> {
-        &mut self.masses
-    }
 }
 
 #[cfg(test)]
