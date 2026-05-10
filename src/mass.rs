@@ -49,4 +49,8 @@ impl Mass {
         // self.p_i.sub(&self.p_o).scale(1.0 / dt)
         (self.p_i - self.p_o) / dt
     }
+
+    pub fn diff_p(&self) -> V2D {
+        self.p_i - self.p_o
+    }
 }
