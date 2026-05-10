@@ -75,6 +75,15 @@ impl V2D {
     pub fn tf(&self, a: f64, b: f64, c: f64, d: f64) -> V2D {
         V2D::new(a * self.x + c * self.y, b * self.x + d * self.y)
     }
+
+    // Linear transformation with previously dividing b and c by x.
+    // Use this if division by zero is causing you issues.
+    // Good for flipping coordinate axiis.
+    // [a   b/x][x]
+    // [c/x d  ][y]
+    pub fn tf_fit(&self, a: f64, b: f64, c: f64, d: f64) -> V2D {
+        V2D::new(a * self.x + c, b + d * self.y)
+    }
 }
 
 /*
