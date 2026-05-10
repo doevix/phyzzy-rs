@@ -105,6 +105,10 @@ impl Model {
         &self.masses
     }
 
+    pub fn get_springs(&self) -> &Vec<Spring> {
+        &self.springs
+    }
+
     pub fn get_mass(&self, idx: usize) -> Mass {
         self.masses[idx]
     }
