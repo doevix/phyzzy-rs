@@ -157,12 +157,16 @@ impl Model {
         // Force application.
         self.clear_forces();
         self.apply_spring_f(dt);
-        self.apply_world_f(w_cfg, dt);
+        self.apply_world_f(world, w_cfg, dt);
 
         // Verlet integration
         for mass in &mut self.masses {
             if mass.fixed { continue; }
 
+            // Verlet calculation.
+            let p_i_o = mass.p_i;
+            mass.p_i = mass.p_i * 2.0 - mass.p_o + (mass.f / mass.m) * dt2;
+            mass.p_o = p_i_o;
 
             // Boundary collisions.
             for bound in &world.bounds {
@@ -170,31 +174,25 @@ impl Model {
                 let mass_to_boundp = mass.p_i - bound.pos;
                 let seg_dist_signed = mass_to_boundp.dot(bound.nrm);
                 let seg_dist_abs = seg_dist_signed.abs();
+                let penetration = -mass.r + seg_dist_signed;
+
                 // Correct positions.
-                if seg_dist_abs < mass.r {
+                if penetration < 0.0 {
                     let overlap = mass.r - seg_dist_abs;
                     let push_dir = if seg_dist_signed > 0.0 { bound.nrm } else { -bound.nrm };
                     mass.p_i += push_dir * overlap;
 
-                    let m_vel = mass.diff_p();
+                    let m_vel = mass.vel(dt);
                     let m_vel_pjt_bnrm = m_vel.pjt(bound.nrm);
                     let m_vel_pjt_b = m_vel.pjt(bound.nrm.prp());
                     // let reflection = m_vel_pjt_bnrm * (1.0 + bound.refl);
-                    let reflection = m_vel_pjt_b - m_vel_pjt_bnrm * bound.refl;
-                    let p_o = mass.p_i - reflection;
+                    let new_v = m_vel_pjt_b - m_vel_pjt_bnrm * bound.refl;
+                    let p_o = mass.p_i - new_v * dt;
 
-                    let surface_norm = mass.f.pjt(bound.nrm);
-                    // TODO: fix weird chatter with springed masses.
-                    let f_bound = mass.f.pjt(bound.nrm.prp());
-                    mass.f += surface_norm + f_bound;
                     mass.p_o = p_o;
                 }
             }
 
-            // Verlet calculation.
-            let p_i_o = mass.p_i;
-            mass.p_i = mass.p_i * 2.0 - mass.p_o + (mass.f / mass.m) * dt2;
-            mass.p_o = p_i_o;
 
         }
 
@@ -223,12 +221,16 @@ impl Model {
         }
     }
 
-    pub fn apply_world_f(&mut self, w_cfg: &WorldConfig, dt: f64) {
+    pub fn apply_world_f(&mut self, world: &World, w_cfg: &WorldConfig, dt: f64) {
         for mass in &mut self.masses {
             let f_weight = w_cfg.gravity * mass.m;
             let f_drag = mass.vel(dt) * -w_cfg.drag;
 
             mass.f += f_weight + f_drag;
+
+            for bound in &world.bounds {
+                // TODO: Apply friction and surface-related force calculations here!
+            }
         }
     }
 }
