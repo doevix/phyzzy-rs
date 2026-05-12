@@ -176,7 +176,7 @@ impl Model {
                 let mass_to_boundp = mass.p_i - bound.pos;
                 let seg_dist_signed = mass_to_boundp.dot(bound.nrm);
                 let seg_dist_abs = seg_dist_signed.abs();
-                let penetration = -mass.r + seg_dist_signed;
+                let penetration = seg_dist_signed - mass.r;
 
                 // Correct positions.
                 if penetration < 0.0 {
@@ -232,6 +232,17 @@ impl Model {
 
             for bound in &world.bounds {
                 // TODO: Apply friction and surface-related force calculations here!
+                // Detect if mass is touching the boundary.
+                // Catch boundary crossing
+                let mass_to_boundp = mass.p_i - bound.pos;
+                let seg_dist_signed = mass_to_boundp.dot(bound.nrm);
+                let seg_dist_abs = seg_dist_signed.abs();
+                let penetration = seg_dist_signed - mass.r;
+
+
+                // Determine if mass is moving or sitting still relative to the boundary.
+
+                // Apply forces.
             }
         }
     }
