@@ -209,7 +209,6 @@ mod tests {
         let s = 12.0;
         let res1 = v * s;
         let res2 = s * v;
-        assert_abs_diff_eq!(res1.x, res2.x, epsilon = 1e-9);
-        assert_abs_diff_eq!(res1.y, res2.y, epsilon = 1e-9);
+        assert_abs_diff_eq!((res1 - res2).mag(), 0.0, epsilon = 1e-9);
     }
 }
