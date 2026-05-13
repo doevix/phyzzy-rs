@@ -54,7 +54,7 @@ impl V2D {
 
     // Get a perpendicular vector.
     pub fn prp(&self) -> V2D {
-        V2D::new(-self.y, self.x)
+        V2D::new(self.y, -self.x)
     }
 
     // Normalization, get unit vector.
