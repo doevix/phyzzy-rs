@@ -136,12 +136,12 @@ impl Model {
     }
 
     // Returns the masses, avoid modifying externally.
-    pub fn get_masses(&self) -> &Vec<Mass> {
+    pub fn get_masses(&self) -> &[Mass] {
         &self.masses
     }
 
     // Returns the springs, avoid modifying externally.
-    pub fn get_springs(&self) -> &Vec<Spring> {
+    pub fn get_springs(&self) -> &[Spring] {
         &self.springs
     }
 
