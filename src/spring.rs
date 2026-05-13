@@ -35,6 +35,6 @@ impl Spring {
     }
     // Change mass index b.
     pub(crate) fn set_mb(&mut self, m_b: usize) {
-        self.m_a = m_b;
+        self.m_b = m_b;
     }
 }
