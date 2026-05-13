@@ -60,7 +60,7 @@ impl V2D {
     // Normalization, get unit vector.
     pub fn unit(self) -> V2D {
         let mag = self.mag();
-        if mag < 1e-12 { return V2D:: null() };
+        if mag < 1e-12 { return V2D::null() };
         self / mag
     }
 
