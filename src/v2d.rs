@@ -83,7 +83,7 @@ impl V2D {
 
     // Linear transformation with previously dividing b and c by x.
     // Use this if division by zero is causing you issues.
-    // Good for flipping coordinate axiis.
+    // Good for flipping coordinate axes.
     // [a   b/x][x]
     // [c/x d  ][y]
     pub fn tf_fit(&self, a: f64, b: f64, c: f64, d: f64) -> V2D {
