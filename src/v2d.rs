@@ -52,9 +52,14 @@ impl V2D {
         r * (self.dot(r) / r.mag2())
     }
 
-    // Get a perpendicular vector.
+    // Get a perpendicular vector. Right handed.
     pub fn prp(&self) -> V2D {
         V2D::new(self.y, -self.x)
+    }
+
+    // Get a perpendicular vector. Left handed.
+    pub fn prp_l(&self) -> V2D {
+        V2D::new(-self.y, self.x)
     }
 
     // Normalization, get unit vector.
