@@ -74,11 +74,6 @@ impl V2D {
         self.y / self.x
     }
 
-    // Compare with another vector.
-    pub fn are_equal(&self, c: V2D) -> bool {
-        self.x == c.x && self.y == c.y
-    }
-
     // Linear transformation according to matrix
     // [a b][x]
     // [c d][y]
