@@ -32,18 +32,6 @@ impl Mass {
         }
     }
 
-    // Creates a mass, with a set velocity.
-    pub const fn load(m: f64, r: f64, p_i: &V2D, p_o: &V2D) -> Self {
-        Self {
-            m,
-            r,
-            f: V2D::null(),
-            p_i: V2D::from(p_i),
-            p_o: V2D::from(p_o),
-            fixed: false,
-        }
-    }
-
     // calculate velocity (p_i - p_o) / dt
     pub fn vel(&self, dt: f64) -> V2D {
         // self.p_i.sub(&self.p_o).scale(1.0 / dt)
@@ -52,5 +40,9 @@ impl Mass {
 
     pub fn diff_p(&self) -> V2D {
         self.p_i - self.p_o
+    }
+
+    pub fn set_vel(&mut self, vel: V2D, dt: f64) {
+        self.p_o = self.p_i - (vel * dt);
     }
 }
