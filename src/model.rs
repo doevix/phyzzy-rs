@@ -152,6 +152,11 @@ impl Model {
     pub fn get_spring(&self, idx: usize) -> Spring {
         self.springs[idx]
     }
+
+    pub fn set_mass_vel(&mut self, idx: usize, vel: V2D, dt: f64) {
+        self.masses[idx].set_vel(vel, dt);
+    }
+
     // Simulation step to calculate and update the model.
     pub fn step(&mut self, dt: f64, world: &World, w_cfg: &WorldConfig) {
         let dt2 = dt * dt;
