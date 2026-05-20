@@ -32,6 +32,17 @@ impl Mass {
         }
     }
 
+    pub const fn load(m: f64, r: f64, pos: &V2D, pos_prv: &V2D) -> Self {
+        Self {
+            m,
+            r,
+            f: V2D::null(),
+            p_i: V2D::from(pos),
+            p_o: V2D::from(pos_prv),
+            fixed: false,
+        }
+    }
+
     // calculate velocity (p_i - p_o) / dt
     pub fn vel(&self, dt: f64) -> V2D {
         // self.p_i.sub(&self.p_o).scale(1.0 / dt)
