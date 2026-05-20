@@ -13,3 +13,11 @@ pub use world::WorldConfig;
 pub use world::Boundary;
 pub use model::Model;
 pub use loader::Loader;
+
+/*
+ * Notes on collisions:
+ * Mass-mass collisions should follow the masses' mu_s and mu_k coefficients.
+ * Mass-spring collisions should follow the springs' mu_s and mu_k coefficients.
+ * Mass-boundary collisions should follow the boundaries' mu_s and mu_k coefficients.
+ * Spring-spring collisions do not exist.
+ */
