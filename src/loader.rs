@@ -1,4 +1,74 @@
-pub struct Loader {
+use serde::{self, Deserialize, Serialize};
+use serde_json;
 
+pub struct Loader;
+
+impl Loader {
+    pub fn load_from_json_str(json_string: &String) -> Result<LoaderData, serde_json::Error> {
+        serde_json::from_str(&json_string)
+    }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LoaderData {
+    pub meta: MetaData,
+    pub model: ModelData,
+    pub world_config: WorldConfigData,
+    pub world: WorldData,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ModelData {
+    pub masses: Vec<MassData>,
+    pub springs: Vec<SpringData>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MetaData {
+    pub name: String,
+    pub creator: String,
+    pub created: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct V2DData {
+    pub x: f64,
+    pub y: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MassData {
+    pub mass: f64,
+    pub radius: f64,
+    pub pos: V2DData,
+    pub vel: V2DData,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SpringData {
+    pub restlength: f64,
+    pub springing: f64,
+    pub dampening: f64,
+    pub m_a: usize,
+    pub m_b: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BoundaryData {
+    pub pos: V2DData,
+    pub nrm: V2DData,
+    pub refl: f64,
+    pub mu_s: f64,
+    pub mu_k: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct WorldConfigData {
+    pub gravity: V2DData,
+    pub drag: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct WorldData {
+    pub bounds: Vec<BoundaryData>,
+}
