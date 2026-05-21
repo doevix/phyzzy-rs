@@ -178,26 +178,20 @@ impl Model {
             // Boundary collisions.
             for bound in &world.bounds {
                 // Catch boundary crossing
-                let mass_to_boundp = mass.p_i - bound.pos;
-                let seg_dist_signed = mass_to_boundp.dot(bound.nrm);
-                let seg_dist_abs = seg_dist_signed.abs();
-                let penetration = seg_dist_signed - mass.r;
+                let bound_unit = bound.nrm.prp();
+                let bound_pos_to_mass = (mass.p_i - bound.pos).pjt(bound_unit);
+                let vec_rad = mass.r * -bound.nrm;
+                let pos_bm = bound_pos_to_mass + bound.pos;
+                let check_side = (mass.p_i + vec_rad - pos_bm).dot(bound.nrm);
+
+                if check_side < 0.0 {
+                    let cur_pi = mass.p_i;
+                    mass.p_i = pos_bm + (mass.r * bound.nrm);
+                    println!("{:?} -> {:?}", cur_pi, mass.p_i);
+                    mass.p_o = mass.p_i;
+                }
 
                 // Correct positions.
-                if penetration < 0.0 {
-                    let overlap = mass.r - seg_dist_abs;
-                    let push_dir = if seg_dist_signed > 0.0 { bound.nrm } else { -bound.nrm };
-                    mass.p_i += push_dir * overlap;
-
-                    let m_vel = mass.vel(dt);
-                    let m_vel_pjt_bnrm = m_vel.pjt(bound.nrm);
-                    let m_vel_pjt_b = m_vel.pjt(bound.nrm.prp());
-                    // let reflection = m_vel_pjt_bnrm * (1.0 + bound.refl);
-                    let new_v = m_vel_pjt_b - m_vel_pjt_bnrm * bound.refl;
-                    let p_o = mass.p_i - new_v * dt;
-
-                    mass.p_o = p_o;
-                }
             }
 
 
