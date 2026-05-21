@@ -205,11 +205,8 @@ impl Model {
                     } else {
                         let delta_friction = -(bound.mu_k * f_nrm_mag * dt / mass.m).max(0.0) * refl_vel.unit();
                         mass.set_vel(refl_vel + delta_friction, dt);
-
                     }
-
                 }
-
             }
 
             // Verlet integration.
