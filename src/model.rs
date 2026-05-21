@@ -186,9 +186,7 @@ impl Model {
 
                 // Correct positions.
                 if check_side < 0.0 {
-                    let cur_pi = mass.p_i;
                     mass.p_i = pos_bm + (mass.r * bound.nrm);
-                    println!("{:?} -> {:?}", cur_pi, mass.p_i);
                     mass.p_o = mass.p_i;
                 }
 
