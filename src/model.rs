@@ -165,7 +165,7 @@ impl Model {
         self.apply_spring_f(dt);
         self.apply_world_f(w_cfg, dt);
 
-        // Verlet integration
+        // Step calculation.
         for mass in &mut self.masses {
             if mass.fixed { continue; }
 
@@ -212,7 +212,7 @@ impl Model {
 
             }
 
-            //Verlet calculation.
+            // Verlet integration.
             let p_i_o = mass.p_i;
             mass.p_i = mass.p_i * 2.0 - mass.p_o + (mass.f / mass.m) * dt2;
             mass.p_o = p_i_o;
