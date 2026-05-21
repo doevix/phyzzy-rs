@@ -184,6 +184,7 @@ impl Model {
                 let pos_bm = bound_pos_to_mass + bound.pos;
                 let check_side = (mass.p_i + vec_rad - pos_bm).dot(bound.nrm);
 
+                // Correct positions.
                 if check_side < 0.0 {
                     let cur_pi = mass.p_i;
                     mass.p_i = pos_bm + (mass.r * bound.nrm);
@@ -191,7 +192,6 @@ impl Model {
                     mass.p_o = mass.p_i;
                 }
 
-                // Correct positions.
             }
 
 
