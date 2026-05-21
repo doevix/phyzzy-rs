@@ -184,10 +184,17 @@ impl Model {
                 let pos_bm = bound_pos_to_mass + bound.pos;
                 let check_side = (mass.p_i + vec_rad - pos_bm).dot(bound.nrm);
 
-                // Correct positions.
                 if check_side < 0.0 {
+                    let vel = mass.vel(dt); // Velocity before reflection.
+                    // Correct positions.
                     mass.p_i = pos_bm + (mass.r * bound.nrm);
                     mass.p_o = mass.p_i;
+
+                    // Apply reflections.
+                    let v_pjt_b = vel.pjt(bound_unit);
+                    let v_pjt_n = vel.pjt(bound.nrm);
+                    let refl_vel = v_pjt_b - (bound.refl * v_pjt_n);
+                    mass.set_vel(refl_vel, dt);
                 }
 
             }
