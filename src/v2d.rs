@@ -211,4 +211,18 @@ mod tests {
         let res2 = s * v;
         assert_abs_diff_eq!((res1 - res2).mag(), 0.0, epsilon = 1e-9);
     }
+
+    #[test]
+    fn test_v2d_prp_mag() {
+        let v = V2D::new(3.0, 4.0);
+        let unit_v = v.unit();
+        assert_abs_diff_eq!(unit_v.prp().mag(), 1.0, epsilon = 1e-9);
+    }
+
+    #[test]
+    fn test_v2d_prp_l_mag() {
+        let v = V2D::new(3.0, 4.0);
+        let unit_v = v.unit();
+        assert_abs_diff_eq!(unit_v.prp_l().mag(), 1.0, epsilon = 1e-9);
+    }
 }
