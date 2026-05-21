@@ -1,3 +1,4 @@
+use crate::V2D;
 /*
  * Springs interconnect Masses and apply forces according to Hooke's law with
  * dampening.
@@ -9,6 +10,9 @@ pub struct Spring {
     pub d: f64,         // dampening factor
     m_a: usize,         // Mass A index
     m_b: usize,         // Mass B index
+    f_spring: f64,      // The springing force applied. For display purposes only.
+    f_dampen: f64,      // The dampening force applied. For display purposes only.
+    cur_length: f64,    // The current spring length. For display purposes only.
 
     // TODO add these somehow when dynamic collisions are added.
     // pub mu_s: f64,       // Spring stiction when collisions enabled.
@@ -17,7 +21,12 @@ pub struct Spring {
 
 impl Spring {
     pub fn new(r: f64, k: f64, d: f64, m_a: usize, m_b: usize) -> Self {
-        Self { r, k, d, m_a, m_b }
+        Self {
+            r, k, d, m_a, m_b,
+            f_spring: 0.0,
+            f_dampen: 0.0,
+            cur_length: 0.0,
+        }
     }
 
     // Get mass index a.
@@ -27,6 +36,33 @@ impl Spring {
     // Get mass index b.
     pub fn get_mb(&self) -> usize {
         self.m_b
+    }
+
+    // Display springing force being applied.
+    pub fn get_springing(&self) -> f64 {
+        self.f_spring
+    }
+
+    // Display dampening force being applied.
+    pub fn get_dampening(&self) -> f64 {
+        self.f_dampen
+    }
+
+    // Display the spring's current length.
+    pub fn get_current_length(&self) -> f64 {
+        self.cur_length
+    }
+
+    pub(crate) fn set_springing(&mut self, f_spr_mag: f64) {
+        self.f_spring = f_spr_mag;
+    }
+
+    pub(crate) fn set_dampening(&mut self, f_dmp_mag: f64) {
+        self.f_dampen = f_dmp_mag;
+    }
+
+    pub(crate) fn set_cur_length(mut self, cur_len: f64) {
+        self.cur_length = cur_len;
     }
 
     // Change mass index a.

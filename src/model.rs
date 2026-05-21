@@ -157,13 +157,16 @@ impl Model {
     }
 
     // Simulation step to calculate and update the model.
-    pub fn step(&mut self, dt: f64, world: &World, w_cfg: &WorldConfig) {
+    pub fn step(&mut self, dt: f64, world: &World, w_cfg: &WorldConfig, paused: bool) {
         let dt2 = dt * dt;
 
         // Force application.
         self.clear_forces();
         self.apply_spring_f(dt);
         self.apply_world_f(w_cfg, dt);
+
+        // Pausing only calculates forces to display them.
+        if paused { return; }
 
         // Step calculation.
         for mass in &mut self.masses {
@@ -234,6 +237,11 @@ impl Model {
             // Force calculations for springing and dampening.
             let f_spr = (ab / l) * (l - spring.r) * spring.k;
             let f_dmp = ((v_b - v_a) / dt).pjt(ab) * spring.d;
+
+            // Save vector magnitudes for displaying.
+            spring.set_springing(f_spr.mag());
+            spring.set_dampening(f_dmp.mag());
+            spring.set_cur_length(l);
 
             self.masses[spring.get_ma()].f += f_spr + f_dmp;
             self.masses[spring.get_mb()].f -= f_spr + f_dmp;
