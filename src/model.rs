@@ -100,7 +100,6 @@ impl Model {
 
         self.springs.push(spring);
         Ok(())
-
     }
 
     pub fn del_mass(&mut self, i_m: usize) {
