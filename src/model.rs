@@ -164,7 +164,7 @@ impl Model {
         // Force application.
         self.clear_forces();
         self.apply_spring_f(dt);
-        self.apply_world_f(world, w_cfg, dt);
+        self.apply_world_f(w_cfg, dt);
 
         // Verlet integration
         for mass in &mut self.masses {
@@ -247,7 +247,7 @@ impl Model {
         }
     }
 
-    pub fn apply_world_f(&mut self, world: &World, w_cfg: &WorldConfig, dt: f64) {
+    pub fn apply_world_f(&mut self, w_cfg: &WorldConfig, dt: f64) {
         for mass in &mut self.masses {
             let f_weight = w_cfg.gravity * mass.m;
             let f_drag = mass.vel(dt) * -w_cfg.drag;
