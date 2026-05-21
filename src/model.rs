@@ -217,9 +217,6 @@ impl Model {
             let p_i_o = mass.p_i;
             mass.p_i = mass.p_i * 2.0 - mass.p_o + (mass.f / mass.m) * dt2;
             mass.p_o = p_i_o;
-
-
-
         }
 
     }
