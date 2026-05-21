@@ -1,4 +1,3 @@
-use crate::V2D;
 /*
  * Springs interconnect Masses and apply forces according to Hooke's law with
  * dampening.
