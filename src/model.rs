@@ -236,17 +236,39 @@ impl Model {
 
             for bound in &world.bounds {
                 // TODO: Apply friction and surface-related force calculations here!
+                let bound_unit = bound.nrm.prp();
+                let bound_pos_to_mass = (mass.p_i - bound.pos).pjt(bound_unit);
+                let vec_rad = mass.r * -bound.nrm;
+                let pos_bm = bound_pos_to_mass + bound.pos;
+                let check_side = (mass.p_i + vec_rad - pos_bm).dot(bound.nrm);
+
                 // Detect if mass is touching the boundary.
-                // Catch boundary crossing
-                let mass_to_boundp = mass.p_i - bound.pos;
-                let seg_dist_signed = mass_to_boundp.dot(bound.nrm);
-                let seg_dist_abs = seg_dist_signed.abs();
-                let penetration = seg_dist_signed - mass.r;
+                if check_side < 0.0 {
+                    let f_sum = mass.f;
+                    let f_nrm = -mass.f.pjt(bound.nrm);
+                    let vel = mass.vel(dt);
+                    // Project forces to boundary.
+                    mass.f = f_sum.pjt(bound.nrm.prp());
+
+                    // Surface friction.
+                    let tolerance = 1e-6;
+                    let vel_surface = vel.pjt(bound.nrm.prp());
+                    let spd_surface = vel_surface.mag();
+                    let f_s = f_nrm.mag() * bound.mu_s;
+                    let f_k = -f_nrm.mag() * bound.mu_k * vel_surface.unit();
+                    if spd_surface > tolerance {
+                        // Sliction when moving and forces greater than stiction.
+                        mass.f += f_k;
+                    }
+                    if spd_surface < tolerance && mass.f.mag() > f_s {
+                        // Stiction when still.
+                        mass.f = V2D::null();
+                        mass.set_vel(V2D::null(), dt);
+                    }
+                }
 
 
-                // Determine if mass is moving or sitting still relative to the boundary.
 
-                // Apply forces.
             }
         }
     }
