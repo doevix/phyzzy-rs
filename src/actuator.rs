@@ -84,11 +84,11 @@ impl MuscleActions for SpringActuator {
         match self {
             // Modify spring's restlength according to waveform.
             Self::SpringClassicMuscle { spring, phase, sense, base_restlength } => {
-                springs[*spring].r = *base_restlength * (1.0 + (wave_amplitude * *sense) * (time_passed + *phase).cos())
+                springs[*spring].r = *base_restlength * (1.0 + (wave_amplitude * *sense) * (time_passed + *phase).sin())
             },
             // Modify spring's springyness according to waveform.
             Self::SpringRelaxationMuscle { spring, phase, sense, base_springing } => {
-                springs[*spring].k = *base_springing * (1.0 + (wave_amplitude * *sense) * (time_passed + *phase).cos())
+                springs[*spring].k = *base_springing * (1.0 + (wave_amplitude * *sense) * (time_passed + *phase).sin())
             },
         }
     }
@@ -174,11 +174,11 @@ impl BladderActions for MassActuator {
         match self {
             // Modify spring's restlength according to waveform.
             Self::MassBalloon { mass, phase, sense, base_radius } => {
-                masses[*mass].r = *base_radius * (2.0 + (wave_amplitude * *sense) * (time_passed + *phase).cos())
+                masses[*mass].r = *base_radius * (2.0 + (wave_amplitude * *sense) * (time_passed + *phase).sin())
             },
             // Modify spring's springyness according to waveform.
             Self::MassTank { mass, phase, sense, base_mass } => {
-                masses[*mass].m = *base_mass * (2.0 + (wave_amplitude * *sense) * (time_passed + *phase).cos())
+                masses[*mass].m = *base_mass * (2.0 + (wave_amplitude * *sense) * (time_passed + *phase).sin())
             },
         }
     }
