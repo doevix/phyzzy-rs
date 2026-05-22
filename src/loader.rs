@@ -10,6 +10,18 @@ impl Loader {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub enum SpringActuatorDataType {
+    Classic,
+    Relaxation,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum MassActuatorDataType {
+    Balloon,
+    Tank,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct LoaderData {
     pub meta: MetaData,
     pub model: ModelData,
@@ -21,6 +33,8 @@ pub struct LoaderData {
 pub struct ModelData {
     pub masses: Vec<MassData>,
     pub springs: Vec<SpringData>,
+    pub muscles: Vec<SpringActuatorData>,
+    pub bladders: Vec<MassActuatorData>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -51,6 +65,22 @@ pub struct SpringData {
     pub dampening: f64,
     pub m_a: usize,
     pub m_b: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SpringActuatorData {
+    pub muscle_type: SpringActuatorDataType,
+    pub phase: f64,
+    pub sense: f64,
+    pub spring: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MassActuatorData {
+    pub bladder_type: MassActuatorDataType,
+    pub phase: f64,
+    pub sense: f64,
+    pub mass: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
