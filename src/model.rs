@@ -1,6 +1,7 @@
 use crate::v2d::V2D;
 use crate::mass::Mass;
 use crate::spring::Spring;
+use crate::actuator::*;
 use crate::world::{ World, WorldConfig };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -25,42 +26,14 @@ impl std::fmt::Display for PhyzzyModelError {
 impl std::error::Error for PhyzzyModelError {}
 
 /*
- * Actuators follow a waveform and change the spring properties.
- */
-pub enum SpringActuator {
-    SpringClassicMuscle {
-        spring: usize,
-        phase: f64,
-        sense: f64,
-    },
-    SpringRelaxationMuscle{
-        spring: usize,
-        phase: f64,
-        sense: f64,
-    },
-}
-
-pub enum MassActuator {
-    MassBalloon {
-        mass: usize,
-        phase: f64,
-        sense: f64,
-    },
-    MassTank {
-        mass: usize,
-        phase: f64,
-        sense: f64,
-    },
-}
-
-/*
  * The model struct holds the model made of springs and masses.
  */
 pub struct Model {
     pub wave_speed: f64,
     pub wave_amplitude: f64,
-    pub muscles: Vec<SpringActuator>,
-    pub bladders: Vec<MassActuator>,
+    time_passed: f64,
+    muscles: Vec<SpringActuator>,
+    bladders: Vec<MassActuator>,
     masses: Vec<Mass>,
     springs: Vec<Spring>,
 
@@ -70,6 +43,7 @@ impl Model {
     pub fn new(wave_speed: f64, wave_amplitude: f64) -> Self {
         Self {
             wave_speed, wave_amplitude,
+            time_passed: 0.0,
             muscles: Vec::new(),
             bladders: Vec::new(),
             masses: Vec::new(),
@@ -77,11 +51,12 @@ impl Model {
         }
     }
 
-    pub fn new_mass(&mut self, mass: Mass) {
+    pub fn new_mass(&mut self, mass: Mass) -> usize {
         self.masses.push(mass);
+        self.masses.len()
     }
 
-    pub fn new_spring(&mut self, spring: Spring) -> Result<(), PhyzzyModelError> {
+    pub fn new_spring(&mut self, spring: Spring) -> Result<usize, PhyzzyModelError> {
         let a = spring.get_ma();
         let b = spring.get_mb();
         let len = self.masses.len();
@@ -94,12 +69,25 @@ impl Model {
                 spring_ma: a,
                 spring_mb: b,
                 n_masses: len
-
             });
         }
 
         self.springs.push(spring);
-        Ok(())
+        Ok(self.springs.len())
+    }
+
+    // Create a new muscle, return the number of muscles present in the model.
+    pub fn new_muscle(&mut self, muscle_type: SpringActuatorType, spring_idx: usize, phase: f64, sense: f64) -> usize {
+        let muscle = SpringActuator::new(muscle_type, spring_idx, &self.springs[spring_idx], phase, sense);
+        self.muscles.push(muscle);
+        self.muscles.len()
+    }
+
+    // Create a new bladder, return the number of bladders present in the model.
+    pub fn new_bladder(&mut self, bladder_type: MassActuatorType, mass_idx: usize, phase: f64, sense: f64) -> usize {
+        let bladder = MassActuator::new(bladder_type, mass_idx, &self.masses[mass_idx], phase, sense);
+        self.bladders.push(bladder);
+        self.bladders.len()
     }
 
     pub fn del_mass(&mut self, i_m: usize) {
@@ -154,6 +142,44 @@ impl Model {
 
     pub fn set_mass_vel(&mut self, idx: usize, vel: V2D, dt: f64) {
         self.masses[idx].set_vel(vel, dt);
+    }
+
+    // Get the velocity of the whole model.
+    pub fn get_centroid_vel(&self, dt: f64) -> V2D {
+        let mut vel_sum = V2D::null();
+
+        if self.masses.len() == 0 { return vel_sum; }
+
+        for mass in &self.masses {
+            vel_sum += mass.vel(dt);
+        }
+
+        vel_sum / (self.masses.len() as f64)
+    }
+
+    // Get the central point of the whole model.
+    pub fn get_centroid_pos(&self) -> V2D {
+        let mut pos_sum = V2D::null();
+
+        if self.masses.len() == 0 { return pos_sum; }
+
+        for mass in &self.masses {
+            pos_sum += mass.p_i;
+        }
+
+        pos_sum / (self.masses.len() as f64)
+    }
+
+    fn wave_step(&mut self, dt: f64) {
+        for muscle in &mut self.muscles {
+            muscle.spring_wave_mut(&mut self.springs, self.wave_amplitude, self.time_passed);
+        }
+
+        for bladder in &mut self.bladders {
+            bladder.mass_wave_mut(&mut self.masses, self.wave_amplitude, self.time_passed);
+        }
+
+        self.time_passed += self.wave_speed * dt;
     }
 
     // Simulation step to calculate and update the model.
@@ -217,6 +243,9 @@ impl Model {
             mass.p_i = mass.p_i * 2.0 - mass.p_o + (mass.f / mass.m) * dt2;
             mass.p_o = p_i_o;
         }
+
+        // Apply actuator changes.
+        self.wave_step(dt);
 
     }
     pub fn clear_forces(&mut self) {
