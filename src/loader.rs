@@ -31,6 +31,9 @@ pub struct LoaderData {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ModelData {
+    pub wave_amplitude: f64,
+    pub wave_speed: f64,
+    pub angle: f64,
     pub masses: Vec<MassData>,
     pub springs: Vec<SpringData>,
     pub muscles: Vec<SpringActuatorData>,

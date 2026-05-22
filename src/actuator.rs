@@ -46,7 +46,7 @@ pub trait MuscleActions {
     fn get_type(&self) -> SpringActuatorType;
     fn get_base_value(&self) -> f64;
     fn spring_to_base_value(&self, springs: &mut Vec<Spring>);
-    fn spring_wave_mut(&self, springs: &mut Vec<Spring>, wave_amplitude: f64, time_passed: f64);
+    fn spring_wave_mut(&self, springs: &mut Vec<Spring>, wave_amplitude: f64, angle: f64);
 }
 
 impl MuscleActions for SpringActuator {
@@ -80,15 +80,15 @@ impl MuscleActions for SpringActuator {
         }
     }
 
-    fn spring_wave_mut(&self, springs: &mut Vec<Spring>, wave_amplitude: f64, time_passed: f64) {
+    fn spring_wave_mut(&self, springs: &mut Vec<Spring>, wave_amplitude: f64, angle: f64) {
         match self {
             // Modify spring's restlength according to waveform.
             Self::SpringClassicMuscle { spring, phase, sense, base_restlength } => {
-                springs[*spring].r = *base_restlength * (1.0 + (wave_amplitude * *sense) * (time_passed + *phase).sin())
+                springs[*spring].r = *base_restlength * (1.0 + (wave_amplitude * *sense) * (angle + *phase).sin())
             },
             // Modify spring's springyness according to waveform.
             Self::SpringRelaxationMuscle { spring, phase, sense, base_springing } => {
-                springs[*spring].k = *base_springing * (1.0 + (wave_amplitude * *sense) * (time_passed + *phase).sin())
+                springs[*spring].k = *base_springing * (1.0 + (wave_amplitude * *sense) * (angle + *phase).sin())
             },
         }
     }
@@ -136,7 +136,7 @@ pub trait BladderActions {
     fn get_type(&self) -> MassActuatorType;
     fn get_base_value(&self) -> f64;
     fn mass_to_base_value(&self, masses: &mut Vec<Mass>);
-    fn mass_wave_mut(&self, masses: &mut Vec<Mass>, wave_amplitude: f64, time_passed: f64);
+    fn mass_wave_mut(&self, masses: &mut Vec<Mass>, wave_amplitude: f64, angle: f64);
 }
 
 impl BladderActions for MassActuator {
@@ -170,15 +170,15 @@ impl BladderActions for MassActuator {
         }
     }
 
-    fn mass_wave_mut(&self, masses: &mut Vec<Mass>, wave_amplitude: f64, time_passed: f64) {
+    fn mass_wave_mut(&self, masses: &mut Vec<Mass>, wave_amplitude: f64, angle: f64) {
         match self {
             // Modify spring's restlength according to waveform.
             Self::MassBalloon { mass, phase, sense, base_radius } => {
-                masses[*mass].r = *base_radius * (2.0 + (wave_amplitude * *sense) * (time_passed + *phase).sin())
+                masses[*mass].r = *base_radius * (2.0 + (wave_amplitude * *sense) * (angle + *phase).sin())
             },
             // Modify spring's springyness according to waveform.
             Self::MassTank { mass, phase, sense, base_mass } => {
-                masses[*mass].m = *base_mass * (2.0 + (wave_amplitude * *sense) * (time_passed + *phase).sin())
+                masses[*mass].m = *base_mass * (2.0 + (wave_amplitude * *sense) * (angle + *phase).sin())
             },
         }
     }

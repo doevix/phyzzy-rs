@@ -31,7 +31,7 @@ impl std::error::Error for PhyzzyModelError {}
 pub struct Model {
     pub wave_speed: f64,
     pub wave_amplitude: f64,
-    time_passed: f64,
+    pub angle: f64,
     muscles: Vec<SpringActuator>,
     bladders: Vec<MassActuator>,
     masses: Vec<Mass>,
@@ -43,7 +43,7 @@ impl Model {
     pub fn new(wave_speed: f64, wave_amplitude: f64) -> Self {
         Self {
             wave_speed, wave_amplitude,
-            time_passed: 0.0,
+            angle: 0.0,
             muscles: Vec::new(),
             bladders: Vec::new(),
             masses: Vec::new(),
@@ -172,14 +172,14 @@ impl Model {
 
     fn wave_step(&mut self, dt: f64) {
         for muscle in &mut self.muscles {
-            muscle.spring_wave_mut(&mut self.springs, self.wave_amplitude, self.time_passed);
+            muscle.spring_wave_mut(&mut self.springs, self.wave_amplitude, self.angle);
         }
 
         for bladder in &mut self.bladders {
-            bladder.mass_wave_mut(&mut self.masses, self.wave_amplitude, self.time_passed);
+            bladder.mass_wave_mut(&mut self.masses, self.wave_amplitude, self.angle);
         }
 
-        self.time_passed += self.wave_speed * dt;
+        self.angle += self.wave_speed * dt;
     }
 
     // Simulation step to calculate and update the model.
