@@ -84,8 +84,8 @@ impl Model {
     }
 
     /// Create a new bladder, return the number of bladders present in the model.
-    pub fn new_bladder(&mut self, bladder_type: MassActuatorType, mass_idx: usize, phase: f64, sense: f64) -> usize {
-        let bladder = MassActuator::new(bladder_type, mass_idx, &self.masses[mass_idx], phase, sense);
+    pub fn new_bladder(&mut self, bladder_type: MassActuatorType, mass_idx: usize, phase: f64, sense: f64, mul: f64) -> usize {
+        let bladder = MassActuator::new(bladder_type, mass_idx, &self.masses[mass_idx], phase, sense, mul);
         self.bladders.push(bladder);
         self.bladders.len()
     }

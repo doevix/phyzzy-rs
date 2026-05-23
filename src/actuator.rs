@@ -121,26 +121,28 @@ pub enum MassActuator {
         phase: f64,
         sense: f64,
         base_radius: f64,
+        multiplier: f64,
     },
     MassTank {
         mass: usize,
         phase: f64,
         sense: f64,
         base_mass: f64,
+        multiplier: f64,
     },
 }
 
 impl MassActuator {
-    pub fn new(act_type: MassActuatorType, mass_idx: usize, mass: &Mass, phase: f64, sense: f64) -> Self {
+    pub fn new(act_type: MassActuatorType, mass_idx: usize, mass: &Mass, phase: f64, sense: f64, multiplier: f64) -> Self {
         match act_type {
             MassActuatorType::Balloon => Self::MassBalloon {
                 mass: mass_idx,
-                phase, sense,
+                phase, sense, multiplier,
                 base_radius: mass.r,
             },
             MassActuatorType::Tank => Self::MassTank {
                 mass: mass_idx,
-                phase, sense,
+                phase, sense, multiplier,
                 base_mass: mass.m,
             },
         }
@@ -166,31 +168,31 @@ pub(crate) trait BladderActuation {
 impl BladderActions for MassActuator {
     fn get_idx(&self) -> usize {
         match self {
-            Self::MassBalloon { mass, phase: _, sense: _, base_radius: _ } => *mass,
-            Self::MassTank { mass, phase: _, sense: _, base_mass: _ } => *mass,
+            Self::MassBalloon { mass, phase: _, sense: _, base_radius: _, multiplier: _ } => *mass,
+            Self::MassTank { mass, phase: _, sense: _, base_mass: _, multiplier: _ } => *mass,
         }
     }
 
     fn get_type(&self) -> MassActuatorType {
         match self {
-            Self::MassBalloon { mass: _, phase: _, sense: _, base_radius: _ } => MassActuatorType::Balloon,
-            Self::MassTank { mass: _, phase: _, sense: _, base_mass: _ } => MassActuatorType::Tank,
+            Self::MassBalloon { mass: _, phase: _, sense: _, base_radius: _, multiplier: _ } => MassActuatorType::Balloon,
+            Self::MassTank { mass: _, phase: _, sense: _, base_mass: _,multiplier: __ } => MassActuatorType::Tank,
         }
     }
 
     // Returns the original restlength or springing according to the type.
     fn get_base_value(&self) -> f64 {
         match self {
-            Self::MassBalloon { mass: _, phase: _, sense: _, base_radius } => *base_radius,
-            Self::MassTank { mass: _, phase: _, sense: _, base_mass } => *base_mass,
+            Self::MassBalloon { mass: _, phase: _, sense: _, base_radius, multiplier: _ } => *base_radius,
+            Self::MassTank { mass: _, phase: _, sense: _, base_mass, multiplier: _ } => *base_mass,
         }
     }
 
     // Returns the type of actuator if needed.
     fn mass_to_base_value(&self, masses: &mut Vec<Mass>) {
         match self {
-            Self::MassBalloon { mass, phase: _, sense: _, base_radius } => masses[*mass].r = *base_radius,
-            Self::MassTank { mass, phase: _, sense: _, base_mass } => masses[*mass].m = *base_mass,
+            Self::MassBalloon { mass, phase: _, sense: _, base_radius, multiplier: _ } => masses[*mass].r = *base_radius,
+            Self::MassTank { mass, phase: _, sense: _, base_mass, multiplier: _ } => masses[*mass].m = *base_mass,
         }
     }
 }
@@ -199,12 +201,12 @@ impl BladderActuation for MassActuator {
     fn mass_wave_mut(&self, masses: &mut Vec<Mass>, wave_amplitude: f64, angle: f64) {
         match self {
             // Modify spring's restlength according to waveform.
-            Self::MassBalloon { mass, phase, sense, base_radius } => {
-                masses[*mass].r = *base_radius * (2.0 + (wave_amplitude * *sense) * (angle + *phase).sin())
+            Self::MassBalloon { mass, phase, sense, base_radius, multiplier } => {
+                masses[*mass].r = *base_radius * (2.0 * *multiplier + (wave_amplitude * *sense * *multiplier) * (angle + *phase).sin())
             },
             // Modify spring's springyness according to waveform.
-            Self::MassTank { mass, phase, sense, base_mass } => {
-                masses[*mass].m = *base_mass * (2.0 + (wave_amplitude * *sense) * (angle + *phase).sin())
+            Self::MassTank { mass, phase, sense, base_mass , multiplier } => {
+                masses[*mass].m = *base_mass * (2.0 * *multiplier + (wave_amplitude * *sense * *multiplier) * (angle + *phase).sin())
             },
         }
     }

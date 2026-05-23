@@ -83,6 +83,7 @@ pub struct MassActuatorData {
     pub bladder_type: MassActuatorDataType,
     pub phase: f64,
     pub sense: f64,
+    pub multiplier: f64,
     pub mass: usize,
 }
 
