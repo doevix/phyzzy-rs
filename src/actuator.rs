@@ -120,6 +120,7 @@ pub enum MassActuatorType {
     Tank,
 }
 
+/// Attached to a mass, allowing changes in specific properties according to a waveform. Called muscles.
 pub enum MassActuator {
     MassBalloon {
         mass: usize,
@@ -204,6 +205,7 @@ impl BladderActions for MassActuator {
 
 impl BladderActuation for MassActuator {
     fn mass_wave_mut(&self, masses: &mut Vec<Mass>, wave_amplitude: f64, angle: f64) {
+        // The waveform need to be different so the minimal value is the base value (also avoids division by zero).
         fn w_val (mul: &f64, amplitude: f64, sense: &f64, angle: f64, phase: &f64) -> f64 {
             1.0 + *mul * (waveform(amplitude, *sense, angle, *phase))
         }
@@ -213,7 +215,7 @@ impl BladderActuation for MassActuator {
                 masses[*mass].r = *base_radius * w_val(multiplier, wave_amplitude, sense, angle, phase)
             },
             // Modify mass's mass according to waveform.
-            Self::MassTank { mass, phase, sense, base_mass , multiplier } => {
+            Self::MassTank { mass, phase, sense, base_mass, multiplier } => {
                 masses[*mass].m = *base_mass * w_val(multiplier, wave_amplitude, sense, angle, phase)
             },
         }
