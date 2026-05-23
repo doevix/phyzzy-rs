@@ -205,11 +205,11 @@ impl BladderActions for MassActuator {
 impl BladderActuation for MassActuator {
     fn mass_wave_mut(&self, masses: &mut Vec<Mass>, wave_amplitude: f64, angle: f64) {
         match self {
-            // Modify spring's restlength according to waveform.
+            // Modify mass's radius according to waveform.
             Self::MassBalloon { mass, phase, sense, base_radius, multiplier } => {
                 masses[*mass].r = *base_radius * (1.0 + *multiplier * waveform(wave_amplitude, *sense, angle, *phase))
             },
-            // Modify spring's springyness according to waveform.
+            // Modify mass's mass according to waveform.
             Self::MassTank { mass, phase, sense, base_mass , multiplier } => {
                 masses[*mass].m = *base_mass * (1.0 + *multiplier * waveform(wave_amplitude, *sense, angle, *phase))
             },
