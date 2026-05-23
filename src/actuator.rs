@@ -3,18 +3,24 @@ use crate::mass::Mass;
 /*
  * Actuators follow a waveform and change specific element properties.
  */
+
+/// Defines the type of spring actuator to be used.
 pub enum SpringActuatorType {
     ClassicMuscle,
     RelaxationMuscle,
 }
 
+/// Attached to a spring, allowing changes in specific properties according to a waveform. Called muscles.
 pub enum SpringActuator {
+    /// Follows a waveform to expand and contract, changing the restlength.
     SpringClassicMuscle {
         spring: usize,
         phase: f64,
         sense: f64,
         base_restlength: f64,
     },
+
+    /// Follows a waveform to tense up and relax, changing the hooke constant.
     SpringRelaxationMuscle{
         spring: usize,
         phase: f64,
@@ -42,10 +48,18 @@ impl SpringActuator {
 }
 
 pub trait MuscleActions {
+    /// Get the index of the spring the actuator is attached to.
     fn get_idx(&self) -> usize;
+    /// Return the actuator type.
     fn get_type(&self) -> SpringActuatorType;
+    /// Get the default restlength or springing of the actuator.
     fn get_base_value(&self) -> f64;
+    /// Set the spring's value back to the default. Useful for the case in detaching the actuator.
     fn spring_to_base_value(&self, springs: &mut Vec<Spring>);
+}
+
+pub(crate) trait MuscleActuation {
+    // Apply mutation on the attached spring.
     fn spring_wave_mut(&self, springs: &mut Vec<Spring>, wave_amplitude: f64, angle: f64);
 }
 
@@ -63,7 +77,6 @@ impl MuscleActions for SpringActuator {
             Self::SpringRelaxationMuscle { spring: _, phase: _, sense: _, base_springing: _ } => SpringActuatorType::RelaxationMuscle,
         }
     }
-
     // Returns the original restlength or springing according to the type.
     fn get_base_value(&self) -> f64 {
         match self {
@@ -80,6 +93,9 @@ impl MuscleActions for SpringActuator {
         }
     }
 
+}
+
+impl MuscleActuation for SpringActuator {
     fn spring_wave_mut(&self, springs: &mut Vec<Spring>, wave_amplitude: f64, angle: f64) {
         match self {
             // Modify spring's restlength according to waveform.
@@ -132,10 +148,18 @@ impl MassActuator {
 }
 
 pub trait BladderActions {
+    /// Get the index of the mass the actuator is attached to.
     fn get_idx(&self) -> usize;
+    /// Return the actuator type.
     fn get_type(&self) -> MassActuatorType;
+    /// Get the default radius or mass of the actuator.
     fn get_base_value(&self) -> f64;
+    /// Set the mass's value back to the default. Useful for the case in detaching the actuator.
     fn mass_to_base_value(&self, masses: &mut Vec<Mass>);
+}
+
+pub(crate) trait BladderActuation {
+    // Apply mutation on the attached mass.
     fn mass_wave_mut(&self, masses: &mut Vec<Mass>, wave_amplitude: f64, angle: f64);
 }
 
@@ -169,7 +193,9 @@ impl BladderActions for MassActuator {
             Self::MassTank { mass, phase: _, sense: _, base_mass } => masses[*mass].m = *base_mass,
         }
     }
+}
 
+impl BladderActuation for MassActuator {
     fn mass_wave_mut(&self, masses: &mut Vec<Mass>, wave_amplitude: f64, angle: f64) {
         match self {
             // Modify spring's restlength according to waveform.
