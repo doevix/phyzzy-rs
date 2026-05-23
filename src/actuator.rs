@@ -10,6 +10,11 @@ pub enum SpringActuatorType {
     RelaxationMuscle,
 }
 
+// The waveform that every actuator must follow
+fn waveform(amplitude: f64, sense: f64, angle: f64,  phase: f64) -> f64 {
+    1.0 + amplitude * sense * (angle + phase).sin()
+}
+
 /// Attached to a spring, allowing changes in specific properties according to a waveform. Called muscles.
 pub enum SpringActuator {
     /// Follows a waveform to expand and contract, changing the restlength.
@@ -100,11 +105,11 @@ impl MuscleActuation for SpringActuator {
         match self {
             // Modify spring's restlength according to waveform.
             Self::SpringClassicMuscle { spring, phase, sense, base_restlength } => {
-                springs[*spring].r = *base_restlength * (1.0 + (wave_amplitude * *sense) * (angle + *phase).sin())
+                springs[*spring].r = *base_restlength * waveform(wave_amplitude, *sense, angle, *phase)
             },
             // Modify spring's springyness according to waveform.
             Self::SpringRelaxationMuscle { spring, phase, sense, base_springing } => {
-                springs[*spring].k = *base_springing * (1.0 + (wave_amplitude * *sense) * (angle + *phase).sin())
+                springs[*spring].k = *base_springing * waveform(wave_amplitude, *sense, angle, *phase)
             },
         }
     }
@@ -202,11 +207,13 @@ impl BladderActuation for MassActuator {
         match self {
             // Modify spring's restlength according to waveform.
             Self::MassBalloon { mass, phase, sense, base_radius, multiplier } => {
-                masses[*mass].r = *base_radius * (2.0 * *multiplier + (wave_amplitude * *sense * *multiplier) * (angle + *phase).sin())
+                // masses[*mass].r = *base_radius * (2.0 * *multiplier + (wave_amplitude * *sense * *multiplier) * (angle + *phase).sin())
+                masses[*mass].r = *base_radius * (1.0 + *multiplier * waveform(wave_amplitude, *sense, angle, *phase))
             },
             // Modify spring's springyness according to waveform.
             Self::MassTank { mass, phase, sense, base_mass , multiplier } => {
-                masses[*mass].m = *base_mass * (2.0 * *multiplier + (wave_amplitude * *sense * *multiplier) * (angle + *phase).sin())
+                // masses[*mass].m = *base_mass * (2.0 * *multiplier + (wave_amplitude * *sense * *multiplier) * (angle + *phase).sin())
+                masses[*mass].m = *base_mass * (1.0 + *multiplier * waveform(wave_amplitude, *sense, angle, *phase))
             },
         }
     }
