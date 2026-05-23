@@ -204,14 +204,17 @@ impl BladderActions for MassActuator {
 
 impl BladderActuation for MassActuator {
     fn mass_wave_mut(&self, masses: &mut Vec<Mass>, wave_amplitude: f64, angle: f64) {
+        fn w_val (mul: &f64, amplitude: f64, sense: &f64, angle: f64, phase: &f64) -> f64 {
+            1.0 + *mul * (waveform(amplitude, *sense, angle, *phase))
+        }
         match self {
             // Modify mass's radius according to waveform.
             Self::MassBalloon { mass, phase, sense, base_radius, multiplier } => {
-                masses[*mass].r = *base_radius * (1.0 + *multiplier * waveform(wave_amplitude, *sense, angle, *phase))
+                masses[*mass].r = *base_radius * w_val(multiplier, wave_amplitude, sense, angle, phase)
             },
             // Modify mass's mass according to waveform.
             Self::MassTank { mass, phase, sense, base_mass , multiplier } => {
-                masses[*mass].m = *base_mass * (1.0 + *multiplier * waveform(wave_amplitude, *sense, angle, *phase))
+                masses[*mass].m = *base_mass * w_val(multiplier, wave_amplitude, sense, angle, phase)
             },
         }
     }
