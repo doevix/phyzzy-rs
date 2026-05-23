@@ -25,9 +25,7 @@ impl std::fmt::Display for PhyzzyModelError {
 
 impl std::error::Error for PhyzzyModelError {}
 
-/*
- * The model struct holds the model made of springs and masses.
- */
+/// The model struct holds the model made of springs and masses.
 pub struct Model {
     pub wave_speed: f64,
     pub wave_amplitude: f64,
@@ -51,11 +49,13 @@ impl Model {
         }
     }
 
+    /// Adds a defined mass to the model. Will take ownership of the mass.
     pub fn new_mass(&mut self, mass: Mass) -> usize {
         self.masses.push(mass);
         self.masses.len()
     }
 
+    /// Adds a defined spring to the model. Will take ownership of the spring. Self connection is disallowed.
     pub fn new_spring(&mut self, spring: Spring) -> Result<usize, PhyzzyModelError> {
         let a = spring.get_ma();
         let b = spring.get_mb();
@@ -76,20 +76,21 @@ impl Model {
         Ok(self.springs.len())
     }
 
-    // Create a new muscle, return the number of muscles present in the model.
+    /// Create a new muscle, return the number of muscles present in the model.
     pub fn new_muscle(&mut self, muscle_type: SpringActuatorType, spring_idx: usize, phase: f64, sense: f64) -> usize {
         let muscle = SpringActuator::new(muscle_type, spring_idx, &self.springs[spring_idx], phase, sense);
         self.muscles.push(muscle);
         self.muscles.len()
     }
 
-    // Create a new bladder, return the number of bladders present in the model.
+    /// Create a new bladder, return the number of bladders present in the model.
     pub fn new_bladder(&mut self, bladder_type: MassActuatorType, mass_idx: usize, phase: f64, sense: f64) -> usize {
         let bladder = MassActuator::new(bladder_type, mass_idx, &self.masses[mass_idx], phase, sense);
         self.bladders.push(bladder);
         self.bladders.len()
     }
 
+    /// Remove a mass according to its index from the model. Attached springs will also be deleted.
     pub fn del_mass(&mut self, i_m: usize) {
         if i_m >= self.masses.len() { return; }
 
@@ -118,33 +119,37 @@ impl Model {
 
     }
 
+    /// Remove a spring according to its index from the model.
     pub fn del_spring(&mut self, i_s: usize) {
         if i_s < self.springs.len() { self.springs.swap_remove(i_s); }
     }
 
-    // Returns the masses, avoid modifying externally.
+    /// Returns the masses, avoid modifying externally.
     pub fn get_masses(&self) -> &[Mass] {
         &self.masses
     }
 
-    // Returns the springs, avoid modifying externally.
+    /// Returns the springs, avoid modifying externally.
     pub fn get_springs(&self) -> &[Spring] {
         &self.springs
     }
 
+    /// Returns a mass at the given index.
     pub fn get_mass(&self, idx: usize) -> Mass {
         self.masses[idx]
     }
 
+    /// Returns a spring at the given index.
     pub fn get_spring(&self, idx: usize) -> Spring {
         self.springs[idx]
     }
 
+    /// Sets the mass's p_o according to a given velocity. Time delta required.
     pub fn set_mass_vel(&mut self, idx: usize, vel: V2D, dt: f64) {
         self.masses[idx].set_vel(vel, dt);
     }
 
-    // Get the velocity of the whole model.
+    /// Get the velocity of the whole model.
     pub fn get_centroid_vel(&self, dt: f64) -> V2D {
         let mut vel_sum = V2D::null();
 
@@ -157,7 +162,7 @@ impl Model {
         vel_sum / (self.masses.len() as f64)
     }
 
-    // Get the central point of the whole model.
+    /// Get the central point of the whole model.
     pub fn get_centroid_pos(&self) -> V2D {
         let mut pos_sum = V2D::null();
 
@@ -170,6 +175,7 @@ impl Model {
         pos_sum / (self.masses.len() as f64)
     }
 
+    // Advances the wave form, internal use only.
     fn wave_step(&mut self, dt: f64) {
         for muscle in &mut self.muscles {
             muscle.spring_wave_mut(&mut self.springs, self.wave_amplitude, self.angle);
@@ -182,7 +188,7 @@ impl Model {
         self.angle += self.wave_speed * dt;
     }
 
-    // Simulation step to calculate and update the model.
+    /// Simulation step to calculate and update the model.
     pub fn step(&mut self, dt: f64, world: &World, w_cfg: &WorldConfig, paused: bool) {
         let dt2 = dt * dt;
 
@@ -248,13 +254,15 @@ impl Model {
         self.wave_step(dt);
 
     }
+
+    /// Clear all the forces applied to masses of the model.
     pub fn clear_forces(&mut self) {
         for mass in &mut self.masses {
             mass.f = V2D::null();
         }
     }
 
-    pub fn apply_spring_f(&mut self, dt: f64) {
+    fn apply_spring_f(&mut self, dt: f64) {
         for spring in &mut self.springs {
             let a = &self.masses[spring.get_ma()];
             let b = &self.masses[spring.get_mb()];
@@ -277,7 +285,7 @@ impl Model {
         }
     }
 
-    pub fn apply_world_f(&mut self, w_cfg: &WorldConfig, dt: f64) {
+    fn apply_world_f(&mut self, w_cfg: &WorldConfig, dt: f64) {
         for mass in &mut self.masses {
             let f_weight = w_cfg.gravity * mass.m;
             let f_drag = mass.vel(dt) * -w_cfg.drag;

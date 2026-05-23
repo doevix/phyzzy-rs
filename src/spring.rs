@@ -1,12 +1,13 @@
-/*
- * Springs interconnect Masses and apply forces according to Hooke's law with
- * dampening.
- */
+/// Springs interconnect Masses and apply forces according to Hooke's law with dampening.
 #[derive(Clone, Copy, Default, Debug)]
 pub struct Spring {
-    pub r: f64,         // restlength of the Spring [m]
-    pub k: f64,         // Hooke's law constant
-    pub d: f64,         // dampening factor
+    /// Restlength of the Spring \[m\]
+    pub r: f64,
+    /// Hooke's law constant, or "springyness". \[N/m\]
+    pub k: f64,
+    /// dampening factor \[Ns/m\]
+    pub d: f64,
+
     m_a: usize,         // Mass A index
     m_b: usize,         // Mass B index
     f_spring: f64,      // The springing force applied. For display purposes only.
@@ -19,6 +20,7 @@ pub struct Spring {
 }
 
 impl Spring {
+    /// Creates a new spring that connects 2 masses by index in the model.
     pub fn new(r: f64, k: f64, d: f64, m_a: usize, m_b: usize) -> Self {
         Self {
             r, k, d, m_a, m_b,
@@ -28,26 +30,26 @@ impl Spring {
         }
     }
 
-    // Get mass index a.
+    /// Get mass index a.
     pub fn get_ma(&self) -> usize {
         self.m_a
     }
-    // Get mass index b.
+    /// Get mass index b.
     pub fn get_mb(&self) -> usize {
         self.m_b
     }
 
-    // Display springing force being applied.
+    /// Display springing force being applied.
     pub fn get_springing(&self) -> f64 {
         self.f_spring
     }
 
-    // Display dampening force being applied.
+    /// Display dampening force being applied.
     pub fn get_dampening(&self) -> f64 {
         self.f_dampen
     }
 
-    // Display the spring's current length.
+    /// Display the spring's current length.
     pub fn get_current_length(&self) -> f64 {
         self.cur_length
     }

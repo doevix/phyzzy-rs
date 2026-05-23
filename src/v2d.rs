@@ -3,6 +3,7 @@
 */
 use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign, SubAssign, MulAssign};
 
+/// Basic 2-D vector type with methods to allow for vector math.
 #[derive(Clone, Copy, Default, PartialEq, Debug)]
 pub struct V2D {
     pub x: f64,
@@ -10,12 +11,12 @@ pub struct V2D {
 }
 
 impl V2D {
-    // Constructor
+    /// Constructor
     pub const fn new(x: f64, y: f64) -> Self {
         Self { x, y }
     }
 
-    // Null vector constructor, for shorter syntax.
+    /// Null vector constructor, for shorter syntax.
     pub const fn null() -> Self {
         Self {
             x: 0.0,
@@ -23,7 +24,7 @@ impl V2D {
         }
     }
 
-    // Create a new vector from a borrowed vector.
+    /// Create a new vector from a borrowed vector.
     pub const fn from(v: &V2D) -> Self {
         Self {
             x: v.x,
@@ -31,61 +32,57 @@ impl V2D {
         }
     }
 
-    // Calculate dot product.
+    /// Calculate dot product.
     pub fn dot(&self, r: V2D) -> f64 {
         self.x * r.x + self.y * r.y
     }
 
-    // Magnitude squared of the vector.
+    /// Magnitude squared of the vector.
     pub fn mag2(&self) -> f64 {
         self.x * self.x + self.y * self.y
     }
 
-    // Magnitude of the vector.
+    /// Magnitude of the vector.
     pub fn mag(&self) -> f64 {
         self.mag2().sqrt()
     }
 
-    // Project to another vector.
+    /// Project to another vector.
     pub fn pjt(&self, r: V2D) -> V2D {
         if r.mag2() < 1e-12 { return V2D::null() };
         r * (self.dot(r) / r.mag2())
     }
 
-    // Get a perpendicular vector. Right handed.
+    /// Get a perpendicular vector. Right handed.
     pub fn prp(&self) -> V2D {
         V2D::new(self.y, -self.x)
     }
 
-    // Get a perpendicular vector. Left handed.
+    /// Get a perpendicular vector. Left handed.
     pub fn prp_l(&self) -> V2D {
         V2D::new(-self.y, self.x)
     }
 
-    // Normalization, get unit vector.
+    /// Normalization, get unit vector.
     pub fn unit(self) -> V2D {
         let mag = self.mag();
         if mag < 1e-12 { return V2D::null() };
         self / mag
     }
 
-    // Get the slope.
+    /// Get the slope.
     pub fn slope(self) -> f64 {
         self.y / self.x
     }
 
-    // Linear transformation according to matrix
-    // [a b][x]
-    // [c d][y]
+    /// Linear transformation according to matrix
     pub fn tf(&self, a: f64, b: f64, c: f64, d: f64) -> V2D {
         V2D::new(a * self.x + c * self.y, b * self.x + d * self.y)
     }
 
-    // Linear transformation with previously dividing b and c by x.
-    // Use this if division by zero is causing you issues.
-    // Good for flipping coordinate axes.
-    // [a   b/x][x]
-    // [c/x d  ][y]
+    /// Linear transformation with previously dividing b and c by x.
+    /// Use this if division by zero is causing you issues.
+    /// Good for flipping coordinate axes.
     pub fn tf_fit(&self, a: f64, b: f64, c: f64, d: f64) -> V2D {
         V2D::new(a * self.x + c, b + d * self.y)
     }
@@ -114,7 +111,7 @@ impl Sub for V2D {
     }
 }
 
-// Left sided scalar multiplication.
+/// Left sided scalar multiplication.
 impl Mul<V2D> for f64 {
     type Output = V2D;
     fn mul(self, s: V2D) -> V2D{
@@ -125,7 +122,7 @@ impl Mul<V2D> for f64 {
     }
 }
 
-// Ridght sided scalar multiplication.
+/// Right sided scalar multiplication.
 impl Mul<f64> for V2D {
     type Output = Self;
     fn mul(self, s: f64) -> Self {
