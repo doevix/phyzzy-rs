@@ -12,7 +12,7 @@ pub use spring::Spring;
 pub use actuator::{SpringActuator, MassActuator, SpringActuatorType, MassActuatorType};
 pub use world::{World, WorldConfig, Boundary};
 pub use model::Model;
-pub use loader::Loader;
+pub use loader::{Loader, MassActuatorDataType, SpringActuatorDataType};
 
 /*
  * Notes on collisions:
