@@ -216,7 +216,7 @@ impl BladderActions for MassActuator {
     fn get_type(&self) -> MassActuatorType {
         match self {
             Self::MassBalloon { mass: _, phase: _, sense: _, base_radius: _, multiplier: _ } => MassActuatorType::Balloon,
-            Self::MassTank { mass: _, phase: _, sense: _, base_mass: _,multiplier: __ } => MassActuatorType::Tank,
+            Self::MassTank { mass: _, phase: _, sense: _, base_mass: _, multiplier: _ } => MassActuatorType::Tank,
         }
     }
 
@@ -239,21 +239,21 @@ impl BladderActions for MassActuator {
     fn set_base_value(&mut self, val: f64) {
         match self {
             Self::MassBalloon { mass: _, phase: _, sense: _, base_radius, multiplier: _ } => *base_radius = val,
-            Self::MassTank { mass: _, phase: _, sense: _, base_mass, multiplier: _} => *base_mass = val,
+            Self::MassTank { mass: _, phase: _, sense: _, base_mass, multiplier: _ } => *base_mass = val,
         }
     }
     // Change phase.
     fn set_phase(&mut self, val: f64) {
         match self {
             Self::MassBalloon { mass: _, phase, sense: _, base_radius: _, multiplier: _ } => *phase = val,
-            Self::MassTank { mass: _, phase, sense: _, base_mass: _, multiplier: _} => *phase = val,
+            Self::MassTank { mass: _, phase, sense: _, base_mass: _, multiplier: _ } => *phase = val,
         }
     }
     // Change sensitivity.
     fn set_sensitivity(&mut self, val: f64) {
         match self {
             Self::MassBalloon { mass: _, phase: _, sense: _, base_radius, multiplier: _ } => *base_radius = val,
-            Self::MassTank { mass: _, phase: _, sense: _, base_mass, multiplier: _} => *base_mass = val,
+            Self::MassTank { mass: _, phase: _, sense: _, base_mass, multiplier: _ } => *base_mass = val,
         }
     }
     // Change multiplier.
