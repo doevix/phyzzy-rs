@@ -61,6 +61,12 @@ pub trait MuscleActions {
     fn get_base_value(&self) -> f64;
     /// Set the spring's value back to the default. Useful for the case in detaching the actuator.
     fn spring_to_base_value(&self, springs: &mut Vec<Spring>);
+    /// Set the base value.
+    fn set_base_value(&mut self, val: f64);
+    /// Change the phase. Phase determines the delay in changing properties according to the waveform.
+    fn set_phase(&mut self, val: f64);
+    /// Change the sensitivity. Sensitivity determines how much the actuator should be affected by the waveform.
+    fn set_sensitivity(&mut self, val: f64);
 }
 
 pub(crate) trait MuscleActuation {
@@ -97,7 +103,27 @@ impl MuscleActions for SpringActuator {
             Self::SpringRelaxationMuscle { spring, phase: _, sense: _, base_springing } => springs[*spring].k = *base_springing,
         }
     }
-
+    // Set base value.
+    fn set_base_value(&mut self, val: f64) {
+        match self {
+            Self::SpringClassicMuscle { spring: _, phase: _, sense: _, base_restlength } => *base_restlength = val,
+            Self::SpringRelaxationMuscle { spring: _, phase: _, sense: _, base_springing } => *base_springing = val,
+        }
+    }
+    // Set phase.
+    fn set_phase(&mut self, val: f64) {
+        match self {
+            Self::SpringClassicMuscle { spring: _, phase, sense: _, base_restlength: _ } => *phase = val,
+            Self::SpringRelaxationMuscle { spring: _, phase, sense: _, base_springing: _ } => *phase = val,
+        }
+    }
+    // Set sensitivity.
+    fn set_sensitivity(&mut self, val: f64) {
+        match self {
+            Self::SpringClassicMuscle { spring: _, phase: _, sense, base_restlength: _ } => *sense = val,
+            Self::SpringRelaxationMuscle { spring: _, phase: _, sense, base_springing: _ } => *sense = val,
+        }
+    }
 }
 
 impl MuscleActuation for SpringActuator {
@@ -164,6 +190,14 @@ pub trait BladderActions {
     fn get_base_value(&self) -> f64;
     /// Set the mass's value back to the default. Useful for the case in detaching the actuator.
     fn mass_to_base_value(&self, masses: &mut Vec<Mass>);
+    /// Change the base value.
+    fn set_base_value(&mut self, val: f64);
+    /// Change the phase. Phase determines the delay in changing properties according to the waveform.
+    fn set_phase(&mut self, val: f64);
+    /// Change the sensitivity. Sensitivity determines how much the actuator should be affected by the waveform.
+    fn set_sensitivity(&mut self, val: f64);
+    /// Change the multiplier. Multiplier determines by how much the mass's maximum property value should be increased.
+    fn set_multiplier(&mut self, val: f64);
 }
 
 pub(crate) trait BladderActuation {
@@ -201,11 +235,39 @@ impl BladderActions for MassActuator {
             Self::MassTank { mass, phase: _, sense: _, base_mass, multiplier: _ } => masses[*mass].m = *base_mass,
         }
     }
+    // Set base value.
+    fn set_base_value(&mut self, val: f64) {
+        match self {
+            Self::MassBalloon { mass: _, phase: _, sense: _, base_radius, multiplier: _ } => *base_radius = val,
+            Self::MassTank { mass: _, phase: _, sense: _, base_mass, multiplier: _} => *base_mass = val,
+        }
+    }
+    // Change phase.
+    fn set_phase(&mut self, val: f64) {
+        match self {
+            Self::MassBalloon { mass: _, phase, sense: _, base_radius: _, multiplier: _ } => *phase = val,
+            Self::MassTank { mass: _, phase, sense: _, base_mass: _, multiplier: _} => *phase = val,
+        }
+    }
+    // Change sensitivity.
+    fn set_sensitivity(&mut self, val: f64) {
+        match self {
+            Self::MassBalloon { mass: _, phase: _, sense: _, base_radius, multiplier: _ } => *base_radius = val,
+            Self::MassTank { mass: _, phase: _, sense: _, base_mass, multiplier: _} => *base_mass = val,
+        }
+    }
+    // Change multiplier.
+    fn set_multiplier(&mut self, val: f64) {
+        match self {
+            Self::MassBalloon { mass: _, phase: _, sense: _, base_radius: _, multiplier } => *multiplier = val,
+            Self::MassTank { mass: _, phase: _, sense: _, base_mass: _, multiplier } => *multiplier = val,
+        }
+    }
 }
 
 impl BladderActuation for MassActuator {
     fn mass_wave_mut(&self, masses: &mut Vec<Mass>, wave_amplitude: f64, angle: f64) {
-        // The waveform need to be different so the minimal value is the base value (also avoids division by zero).
+        // The waveform needs to be different so the minimal value is the base value (also avoids division by zero).
         fn w_val (mul: &f64, amplitude: f64, sense: &f64, angle: f64, phase: &f64) -> f64 {
             1.0 + *mul * (waveform(amplitude, *sense, angle, *phase))
         }
