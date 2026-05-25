@@ -12,13 +12,15 @@ pub struct WorldConfig {
  * The World is the environment the model lives in. Applies boundaries where needed.
  */
 pub struct World {
+    pub area_sz: V2D,
     pub bounds: Vec<Boundary>,
 }
 
 impl World {
-    pub fn new() -> Self {
+    pub fn new(area_sz: &V2D) -> Self {
         Self {
-            bounds: Vec::new()
+            bounds: Vec::new(),
+            area_sz: V2D::from(area_sz),
         }
     }
 }

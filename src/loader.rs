@@ -104,5 +104,6 @@ pub struct WorldConfigData {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WorldData {
+    pub area_sz: V2DData,
     pub bounds: Vec<BoundaryData>,
 }
