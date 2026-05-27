@@ -246,7 +246,6 @@ impl Model {
 
                     // Apply stiction.
                     if v_pjt_b.mag() <= impulse_sliction {
-                        // mass.p_o = mass.p_i;
                         mass.set_vel(refl_vel.pjt(bound.nrm), dt);
                         mass.f -= f_bound;
 
