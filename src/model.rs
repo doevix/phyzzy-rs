@@ -213,8 +213,7 @@ impl Model {
         self.apply_spring_f(dt);
         self.apply_world_f(w_cfg, dt);
 
-        // Pausing only calculates forces to display them.
-        if paused { return; }
+
 
         // Step calculation.
         for mass in &mut self.masses {
@@ -223,6 +222,8 @@ impl Model {
                 mass.p_o = mass.p_i;
                 continue;
             }
+        // Pausing only calculates forces to display them.
+        if paused { return; }
 
             // Boundary collisions.
             for bound in &world.bounds {
