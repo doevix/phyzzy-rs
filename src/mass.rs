@@ -21,6 +21,7 @@ pub struct Mass {
 
     /// When true, indicates whether the model should ignore in calculation step.
     pub fixed: bool,
+    pub held: bool,
 
     // TODO add these when dynamic collisions are enabled.
     // refl: f64,      // Reflection, for mass-mass collisions.
@@ -38,6 +39,7 @@ impl Mass {
             p_i: V2D::from(pos),
             p_o: V2D::from(pos),
             fixed: false,
+            held: false,
         }
     }
 
@@ -50,6 +52,7 @@ impl Mass {
             p_i: V2D::from(pos),
             p_o: V2D::from(pos_prv),
             fixed: false,
+            held: false,
         }
     }
 
