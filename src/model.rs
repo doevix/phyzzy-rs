@@ -149,6 +149,18 @@ impl Model {
         self.masses[idx].set_vel(vel, dt);
     }
 
+    /// Sets the mass's position directly.
+    pub fn set_mass_pos(&mut self, idx: usize, pos: V2D) {
+        self.masses[idx].p_i = pos;
+    }
+
+    pub fn hold_mass(&mut self, idx: usize) {
+        self.masses[idx].held = true;
+    }
+    pub fn release_mass(&mut self, idx: usize) {
+        self.masses[idx].held = false;
+    }
+
     /// Get the velocity of the whole model.
     pub fn get_centroid_vel(&self, dt: f64) -> V2D {
         let mut vel_sum = V2D::null();
@@ -202,7 +214,7 @@ impl Model {
 
         // Step calculation.
         for mass in &mut self.masses {
-            if mass.fixed { continue; }
+            if mass.fixed || mass.held { continue; }
 
             // Boundary collisions.
             for bound in &world.bounds {
@@ -214,13 +226,14 @@ impl Model {
                 let check_side = (mass.p_i + vec_rad - pos_bm).dot(bound.nrm);
 
                 if check_side < 0.0 {
-                    let vel = mass.vel(dt); // Velocity before reflection.
+                    // Velocity before reflection.
+                    let vel = mass.vel(dt);
+
                     // Correct positions.
                     mass.p_i = pos_bm + (mass.r * bound.nrm);
                     mass.p_o = mass.p_i;
 
                     // Apply reflections.
-                    let tol = 1e-6;
                     let v_pjt_b = vel.pjt(bound_unit);
                     let v_pjt_n = vel.pjt(bound.nrm);
                     let refl_vel = v_pjt_b - (bound.refl * v_pjt_n);
@@ -232,8 +245,9 @@ impl Model {
                     let impulse_sliction = bound.mu_k * f_nrm_mag * dt / mass.m;
 
                     // Apply stiction.
-                    if v_pjt_b.mag() <= impulse_sliction + tol {
-                        mass.p_o = mass.p_i;
+                    if v_pjt_b.mag() <= impulse_sliction {
+                        // mass.p_o = mass.p_i;
+                        mass.set_vel(refl_vel.pjt(bound.nrm), dt);
                         mass.f -= f_bound;
 
                     // Apply sliction.
