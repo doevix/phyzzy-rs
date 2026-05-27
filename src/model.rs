@@ -222,8 +222,8 @@ impl Model {
                 mass.p_o = mass.p_i;
                 continue;
             }
-        // Pausing only calculates forces to display them.
-        if paused { return; }
+        // Pausing and holding only calculates forces to display them.
+        if paused || mass.held { return; }
 
             // Boundary collisions.
             for bound in &world.bounds {
