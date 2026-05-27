@@ -161,6 +161,10 @@ impl Model {
         self.masses[idx].held = false;
     }
 
+    pub fn clear_mass_forces(&mut self, idx: usize) {
+        self.masses[idx].f = V2D::null();
+    }
+
     /// Get the velocity of the whole model.
     pub fn get_centroid_vel(&self, dt: f64) -> V2D {
         let mut vel_sum = V2D::null();
@@ -214,7 +218,11 @@ impl Model {
 
         // Step calculation.
         for mass in &mut self.masses {
-            if mass.fixed || mass.held { continue; }
+            if mass.fixed { continue; }
+            if mass.held {
+                mass.p_o = mass.p_i;
+                continue;
+            }
 
             // Boundary collisions.
             for bound in &world.bounds {
