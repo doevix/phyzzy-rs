@@ -30,6 +30,7 @@ pub struct Model {
     pub wave_speed: f64,
     pub wave_amplitude: f64,
     pub angle: f64,
+    dir_mul: f64,
     muscles: Vec<SpringActuator>,
     bladders: Vec<MassActuator>,
     masses: Vec<Mass>,
@@ -41,6 +42,7 @@ impl Model {
     pub fn new(wave_speed: f64, wave_amplitude: f64) -> Self {
         Self {
             wave_speed, wave_amplitude,
+            dir_mul: 1.0,
             angle: 0.0,
             muscles: Vec::new(),
             bladders: Vec::new(),
@@ -191,6 +193,10 @@ impl Model {
         pos_sum / (self.masses.len() as f64)
     }
 
+    pub fn toggle_wave_dir(&mut self) {
+        self.dir_mul *= -1.0;
+    }
+
     // Advances the wave form, internal use only.
     fn wave_step(&mut self, dt: f64) {
         for muscle in &mut self.muscles {
@@ -201,7 +207,7 @@ impl Model {
             bladder.mass_wave_mut(&mut self.masses, self.wave_amplitude, self.angle);
         }
 
-        self.angle += self.wave_speed * dt;
+        self.angle += self.dir_mul * self.wave_speed.abs() * dt;
     }
 
     /// Simulation step to calculate and update the model.
