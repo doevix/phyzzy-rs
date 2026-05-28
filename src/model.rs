@@ -30,6 +30,7 @@ pub struct Model {
     pub wave_speed: f64,
     pub wave_amplitude: f64,
     pub angle: f64,
+    pub ignore_g: bool,
     dir_mul: f64,
     muscles: Vec<SpringActuator>,
     bladders: Vec<MassActuator>,
@@ -43,6 +44,7 @@ impl Model {
         Self {
             wave_speed, wave_amplitude,
             dir_mul: 1.0,
+            ignore_g: false,
             angle: 0.0,
             muscles: Vec::new(),
             bladders: Vec::new(),
@@ -76,6 +78,11 @@ impl Model {
 
         self.springs.push(spring);
         Ok(self.springs.len())
+    }
+
+    /// Toggle the need to ignore gravity without the need to modify it.
+    pub fn toggle_g(&mut self) {
+        self.ignore_g = !self.ignore_g;
     }
 
     /// Create a new muscle, return the number of muscles present in the model.
@@ -315,10 +322,10 @@ impl Model {
 
     fn apply_world_f(&mut self, w_cfg: &WorldConfig, dt: f64) {
         for mass in &mut self.masses {
-            let f_weight = w_cfg.gravity * mass.m;
+            let f_weight = if !self.ignore_g { w_cfg.gravity * mass.m } else { V2D::null() };
             let f_drag = mass.vel(dt) * -w_cfg.drag;
 
-            mass.f += f_weight + f_drag;
+            mass.f += f_drag + f_weight;
         }
     }
 }
