@@ -25,31 +25,52 @@ impl std::fmt::Display for PhyzzyModelError {
 
 impl std::error::Error for PhyzzyModelError {}
 
+// Collisions: Model objects can collide with each other if they are on the same collision layer.
+// Stack of a collision layer. Managed internally only by the Model.
+struct CollisionLayer {
+    masses: Vec<usize>,
+    springs: Vec<usize>,
+}
+
 /// The model struct holds the model made of springs and masses.
 pub struct Model {
+    /// Rate at which the angle increases or decreases.
     pub wave_speed: f64,
+    /// Waveform amplitude. Should only be at a value between 0 and 1.
     pub wave_amplitude: f64,
+    /// Angle of the wave form..
     pub angle: f64,
+    /// Determines if the gravity should be completely ignored.
     pub ignore_g: bool,
-    dir_mul: f64,
-    muscles: Vec<SpringActuator>,
-    bladders: Vec<MassActuator>,
+
+    // Defines the direction in which the waveform should be moving.
+    w_dir_mul: f64,
+
+    // Masses of the model's graph (nodes)
     masses: Vec<Mass>,
+    // Springs of the model's graph (edges)
     springs: Vec<Spring>,
 
+    // Actuators
+    muscles: Vec<SpringActuator>,
+    bladders: Vec<MassActuator>,
+
+    // Collision layers
+    collision_layers: Vec<CollisionLayer>,
 }
 
 impl Model {
     pub fn new(wave_speed: f64, wave_amplitude: f64) -> Self {
         Self {
             wave_speed, wave_amplitude,
-            dir_mul: 1.0,
+            w_dir_mul: 1.0,
             ignore_g: false,
             angle: 0.0,
             muscles: Vec::new(),
             bladders: Vec::new(),
             masses: Vec::new(),
             springs: Vec::new(),
+            collision_layers: Vec::new(),
         }
     }
 
@@ -85,7 +106,7 @@ impl Model {
         self.ignore_g = !self.ignore_g;
     }
 
-    /// Create a new muscle, return the number of muscles present in the model.
+    /// Create a new muscle, return the number of muscles present in the model.dir_mul
     pub fn new_muscle(&mut self, muscle_type: SpringActuatorType, spring_idx: usize, phase: f64, sense: f64) -> usize {
         let muscle = SpringActuator::new(muscle_type, spring_idx, &self.springs[spring_idx], phase, sense);
         self.muscles.push(muscle);
@@ -201,7 +222,7 @@ impl Model {
     }
 
     pub fn toggle_wave_dir(&mut self) {
-        self.dir_mul *= -1.0;
+        self.w_dir_mul *= -1.0;
     }
 
     // Advances the wave form, internal use only.
