@@ -27,9 +27,30 @@ impl std::error::Error for PhyzzyModelError {}
 
 // Collisions: Model objects can collide with each other if they are on the same collision layer.
 // Stack of a collision layer. Managed internally only by the Model.
-struct CollisionLayer {
+pub(crate) struct CollisionLayer {
     masses: Vec<usize>,
     springs: Vec<usize>,
+}
+
+impl CollisionLayer {
+    pub(crate) fn new() -> Self {
+        Self {
+            masses: Vec::new(),
+            springs: Vec::new(),
+        }
+    }
+    // Add a mass's index to the layer.
+    pub(crate) fn push_mass(&mut self, idx: usize) {
+        if !self.masses.contains(&idx) {
+            self.masses.push(idx);
+        }
+    }
+    // Add a spring's index to the layer.
+    pub(crate) fn push_spring(&mut self, idx: usize) {
+        if !self.springs.contains(&idx) {
+            self.springs.push(idx);
+        }
+    }
 }
 
 /// The model struct holds the model made of springs and masses.
@@ -99,6 +120,10 @@ impl Model {
 
         self.springs.push(spring);
         Ok(self.springs.len())
+    }
+
+    pub fn new_collision_layer(&mut self) {
+        self.collision_layers.push(CollisionLayer::new());
     }
 
     /// Toggle the need to ignore gravity without the need to modify it.
@@ -235,7 +260,7 @@ impl Model {
             bladder.mass_wave_mut(&mut self.masses, self.wave_amplitude, self.angle);
         }
 
-        self.angle += self.dir_mul * self.wave_speed.abs() * dt;
+        self.angle += self.w_dir_mul * self.wave_speed.abs() * dt;
     }
 
     /// Simulation step to calculate and update the model.
