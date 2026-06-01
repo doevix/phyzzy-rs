@@ -129,12 +129,12 @@ impl Model {
 
     /// Adds mass to defined collision layer.
     pub fn mass_to_collision_layer(&mut self, layer: usize, idx: usize) {
-        self.collision_layers[layer].masses.push(idx);
+        self.collision_layers[layer].push_mass(idx);
     }
 
     /// Adds spring to defined collision layer.
     pub fn spring_to_collision_layer(&mut self, layer: usize, idx: usize) {
-        self.collision_layers[layer].springs.push(idx);
+        self.collision_layers[layer].push_spring(idx);
     }
 
     /// Toggle the need to ignore gravity without the need to modify it.
