@@ -71,4 +71,9 @@ impl Mass {
     pub fn set_vel(&mut self, vel: V2D, dt: f64) {
         self.p_o = self.p_i - (vel * dt);
     }
+
+    /// Approximation of position according to an alpha. (for accumulative delta loops)
+    pub fn approx_pos(&self, alpha: f64) -> V2D {
+        self.p_i * alpha + self.p_o * (1.0 - alpha)
+    }
 }
