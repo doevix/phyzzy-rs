@@ -274,6 +274,19 @@ impl Model {
         self.angle += self.w_dir_mul * self.wave_speed.abs() * dt;
     }
 
+    // Handles mass-mass collisiones.
+    fn mm_collision_handle(&mut self, idx_a: usize, idx_b: usize) {
+        let mut mass_a = self.masses[idx_a];
+        let mut mass_b = self.masses[idx_b];
+
+        // Position corrections.
+        let cur_dist = mass_a.p_i - mass_b.p_i;
+        let corrected_dist = (mass_a.r + mass_b.r) * cur_dist.unit();
+        let delta_pos = 0.5 * (dist - corrected_dist);
+        mass_a.p_i -= delta_pos;
+        mass_b.p_i += delta_pos;
+    }
+
     /// Simulation step to calculate and update the model.
     pub fn step(&mut self, dt: f64, world: &World, w_cfg: &WorldConfig, paused: bool) {
         let dt2 = dt * dt;
@@ -286,14 +299,28 @@ impl Model {
 
 
         // Step calculation.
-        for mass in &mut self.masses {
+        for (idx, mass) in &mut self.masses.iter_mut().enumerate() {
             if mass.fixed { continue; }
             if mass.held {
                 mass.p_o = mass.p_i;
                 continue;
             }
-        // Pausing and holding only calculates forces to display them.
-        if paused || mass.held { return; }
+            // Pausing and holding only calculates forces to display them.
+            if paused || mass.held { return; }
+
+            // Handle collision layers. Free moving object collisions.
+            for layer in &self.collision_layers {
+                // Mass-mass collisions. Masses in same layer will collide against each other. Naive approach O(n^2).
+                if !layer.masses.contains(&idx) { continue; } // only manage layer that contains mass.
+                for m_b in layer.masses {
+                    if (mass.p_i - self.masses[m_b].p_i).mag() < (mass.r + self.masses[m_b].r) {
+                        self.mm_collision_handle(idx, m_b);
+                    }
+
+                }
+                }
+
+            }
 
             // Boundary collisions.
             for bound in &world.bounds {
