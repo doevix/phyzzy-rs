@@ -230,13 +230,15 @@ impl Model {
 
         // Step calculation.
         for mass in &mut self.masses {
-            if mass.fixed { continue; }
-            if mass.held {
+
+            // Ensure the integrator doesn't do anything to held or fixed masses
+            if mass.held || mass.fixed {
                 mass.p_o = mass.p_i;
                 continue;
             }
-        // Pausing and holding only calculates forces to display them.
-        if paused || mass.held { return; }
+
+            // Pausing and holding only calculates forces to display them.
+            if paused || mass.held { return; }
 
             // Boundary collisions.
             for bound in &world.bounds {
