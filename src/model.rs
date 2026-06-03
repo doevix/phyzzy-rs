@@ -274,10 +274,13 @@ impl Model {
         self.angle += self.w_dir_mul * self.wave_speed.abs() * dt;
     }
 
-    // Handles mass-mass collisiones.
-    fn mm_collision_handle(&mut self, idx_a: usize, idx_b: usize) {
+    // Handles mass-mass collisions.
+    fn mm_collision_handle(&mut self, idx_a: usize, idx_b: usize, dt: f64) {
         let mut mass_a = self.masses[idx_a];
         let mut mass_b = self.masses[idx_b];
+
+        let vel_a = mass_a.vel(dt);
+        let vel_b = mass_b.vel(dt);
 
         // Position corrections.
         let cur_dist = mass_a.p_i - mass_b.p_i;
@@ -285,6 +288,10 @@ impl Model {
         let delta_pos = 0.5 * (dist - corrected_dist);
         mass_a.p_i -= delta_pos;
         mass_b.p_i += delta_pos;
+
+        // Velocity reflections.
+        // let coll_tangent = cur_dist.prp().unit();
+
     }
 
     /// Simulation step to calculate and update the model.
