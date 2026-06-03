@@ -30,6 +30,12 @@ pub struct LoaderData {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct CollisionLayerData {
+    pub masses: Vec<usize>,
+    pub springs: Vec<usize>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ModelData {
     pub wave_amplitude: f64,
     pub wave_speed: f64,
@@ -38,6 +44,7 @@ pub struct ModelData {
     pub springs: Vec<SpringData>,
     pub muscles: Vec<SpringActuatorData>,
     pub bladders: Vec<MassActuatorData>,
+    pub collision_layers: Vec<CollisionLayerData>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
