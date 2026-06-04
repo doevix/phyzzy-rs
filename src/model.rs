@@ -220,6 +220,13 @@ impl Model {
         self.masses[idx].p_i = pos;
     }
 
+    pub fn fix_mass(&mut self, idx: usize) {
+        self.masses[idx].fixed = true;
+    }
+    pub fn free_mass(&mut self, idx: usize) {
+        self.masses[idx].fixed = false;
+    }
+
     pub fn hold_mass(&mut self, idx: usize) {
         self.masses[idx].held = true;
     }
@@ -279,15 +286,25 @@ impl Model {
         let (pos_a, rad_a) = (self.masses[idx_a].p_i, self.masses[idx_a].r);
         let (pos_b, rad_b) = (self.masses[idx_b].p_i, self.masses[idx_b].r);
 
+        let fixed_a = self.masses[idx_a].fixed;
+        let fixed_b = self.masses[idx_b].fixed;
+
         let _vel_a = self.masses[idx_a].vel(dt);
         let _vel_b = self.masses[idx_b].vel(dt);
 
         let dist = pos_a - pos_b;
         let correct_dist = (rad_a + rad_b) * dist.unit();
-        let delta_pos = 0.5 * (dist - correct_dist);
+        let delta_pos = dist - correct_dist;
 
-        self.masses[idx_a].p_i -= delta_pos;
-        self.masses[idx_b].p_i += delta_pos;
+        // Make sure fixed masses don't get pulled around by collisions.
+        if !fixed_a && !fixed_b {
+            self.masses[idx_a].p_i -= delta_pos * 0.5;
+            self.masses[idx_b].p_i += delta_pos * 0.5;
+        } else if !fixed_a && fixed_b {
+            self.masses[idx_a].p_i -= delta_pos;
+        } else if fixed_a && !fixed_b {
+            self.masses[idx_b].p_i -= delta_pos;
+        }
     }
 
     /// Simulation step to calculate and update the model.
