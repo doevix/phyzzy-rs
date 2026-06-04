@@ -281,8 +281,7 @@ impl Model {
         self.angle += self.w_dir_mul * self.wave_speed.abs() * dt;
     }
 
-    fn mm_collision_handle(&mut self, idx_a: usize, idx_b: usize, paused: bool, dt: f64) {
-        if paused { return; }
+    fn mm_collision_handle(&mut self, idx_a: usize, idx_b: usize, dt: f64) {
         let (pos_a, rad_a) = (self.masses[idx_a].p_i, self.masses[idx_a].r);
         let (pos_b, rad_b) = (self.masses[idx_b].p_i, self.masses[idx_b].r);
 
@@ -338,8 +337,10 @@ impl Model {
             }
         }
         // Handle collisiones.
-        for collision in collisions {
-            self.mm_collision_handle(collision.0, collision.1, paused, dt);
+        if !paused {
+            for collision in collisions {
+                self.mm_collision_handle(collision.0, collision.1, dt);
+            }
         }
 
         // Step calculation.
