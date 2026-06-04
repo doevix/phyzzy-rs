@@ -274,24 +274,20 @@ impl Model {
         self.angle += self.w_dir_mul * self.wave_speed.abs() * dt;
     }
 
-    // Handles mass-mass collisions.
-    fn mm_collision_handle(&mut self, idx_a: usize, idx_b: usize, dt: f64) {
-        let mut mass_a = self.masses[idx_a];
-        let mut mass_b = self.masses[idx_b];
+    fn mm_collision_handle(&mut self, idx_a: usize, idx_b: usize, paused: bool, dt: f64) {
+        if paused { return; }
+        let (pos_a, rad_a) = (self.masses[idx_a].p_i, self.masses[idx_a].r);
+        let (pos_b, rad_b) = (self.masses[idx_b].p_i, self.masses[idx_b].r);
 
-        let vel_a = mass_a.vel(dt);
-        let vel_b = mass_b.vel(dt);
+        let _vel_a = self.masses[idx_a].vel(dt);
+        let _vel_b = self.masses[idx_b].vel(dt);
 
-        // Position corrections.
-        let cur_dist = mass_a.p_i - mass_b.p_i;
-        let corrected_dist = (mass_a.r + mass_b.r) * cur_dist.unit();
-        let delta_pos = 0.5 * (dist - corrected_dist);
-        mass_a.p_i -= delta_pos;
-        mass_b.p_i += delta_pos;
+        let dist = pos_a - pos_b;
+        let correct_dist = (rad_a + rad_b) * dist.unit();
+        let delta_pos = 0.5 * (dist - correct_dist);
 
-        // Velocity reflections.
-        // let coll_tangent = cur_dist.prp().unit();
-
+        self.masses[idx_a].p_i -= delta_pos;
+        self.masses[idx_b].p_i += delta_pos;
     }
 
     /// Simulation step to calculate and update the model.
@@ -303,10 +299,35 @@ impl Model {
         self.apply_spring_f(dt);
         self.apply_world_f(w_cfg, dt);
 
+        // Find and collect the collisions here (bc the borrow checker gets mad doing it all together :c)
+        let mut collisions = Vec::new();
+        for (idx, mass) in self.masses.iter().enumerate() {
+            let layer = self.collision_layers.iter().position(|layer| {
+                layer.masses.contains(&idx)
+            });
 
+            if let Some(l_idx) = layer {
+                for b_idx in &self.collision_layers[l_idx].masses {
+                    let secondary = self.masses[*b_idx];
+                    // Collision distance check.
+                    if (mass.p_i - secondary.p_i).mag() < mass.r + secondary.r {
+                        // Check if the pair already exists before adding it.
+                        if let None = collisions.iter().position(|coll| {
+                            *coll == (idx, *b_idx) || *coll == (*b_idx, idx)
+                        }) {
+                            collisions.push((idx, *b_idx));
+                        }
+                    }
+                }
+            }
+        }
+        // Handle collisiones.
+        for collision in collisions {
+            self.mm_collision_handle(collision.0, collision.1, paused, dt);
+        }
 
         // Step calculation.
-        for (idx, mass) in &mut self.masses.iter_mut().enumerate() {
+        for mass in &mut self.masses {
             if mass.fixed { continue; }
             if mass.held {
                 mass.p_o = mass.p_i;
@@ -315,19 +336,6 @@ impl Model {
             // Pausing and holding only calculates forces to display them.
             if paused || mass.held { return; }
 
-            // Handle collision layers. Free moving object collisions.
-            for layer in &self.collision_layers {
-                // Mass-mass collisions. Masses in same layer will collide against each other. Naive approach O(n^2).
-                if !layer.masses.contains(&idx) { continue; } // only manage layer that contains mass.
-                for m_b in layer.masses {
-                    if (mass.p_i - self.masses[m_b].p_i).mag() < (mass.r + self.masses[m_b].r) {
-                        self.mm_collision_handle(idx, m_b);
-                    }
-
-                }
-                }
-
-            }
 
             // Boundary collisions.
             for bound in &world.bounds {
