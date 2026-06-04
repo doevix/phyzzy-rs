@@ -309,7 +309,6 @@ impl Model {
 
     /// Simulation step to calculate and update the model.
     pub fn step(&mut self, dt: f64, world: &World, w_cfg: &WorldConfig, paused: bool) {
-        let dt2 = dt * dt;
 
         // Force application.
         self.clear_forces();
@@ -344,6 +343,7 @@ impl Model {
         }
 
         // Step calculation.
+        let dt2 = dt * dt;
         for mass in &mut self.masses {
             if mass.fixed { continue; }
             if mass.held {
