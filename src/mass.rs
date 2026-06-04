@@ -24,7 +24,7 @@ pub struct Mass {
     pub held: bool,
 
     // TODO add these when dynamic collisions are enabled.
-    // refl: f64,      // Reflection, for mass-mass collisions.
+    pub refl: f64,      // Reflection, for mass-mass collisions.
     // mu_s: f64,      // Surface stiction.
     // mu_k: f64,      // Surface sliction
 }
@@ -40,6 +40,7 @@ impl Mass {
             p_o: V2D::from(pos),
             fixed: false,
             held: false,
+            refl: 0.8,
         }
     }
 
@@ -53,6 +54,7 @@ impl Mass {
             p_o: V2D::from(pos_prv),
             fixed: false,
             held: false,
+            refl: 0.8,
         }
     }
 

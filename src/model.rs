@@ -288,8 +288,8 @@ impl Model {
         let fixed_a = self.masses[idx_a].fixed;
         let fixed_b = self.masses[idx_b].fixed;
 
-        let _vel_a = self.masses[idx_a].vel(dt);
-        let _vel_b = self.masses[idx_b].vel(dt);
+        let vel_a = self.masses[idx_a].vel(dt);
+        let vel_b = self.masses[idx_b].vel(dt);
 
         let dist = pos_a - pos_b;
         let correct_dist = (rad_a + rad_b) * dist.unit();
@@ -304,6 +304,15 @@ impl Model {
         } else if fixed_a && !fixed_b {
             self.masses[idx_b].p_i -= delta_pos;
         }
+
+        let refl_a = self.masses[idx_a].refl;
+        let refl_b = self.masses[idx_b].refl;
+        let mass_a = self.masses[idx_a].m;
+        let mass_b = self.masses[idx_b].m;
+        let new_vel_a = vel_a - (vel_a - vel_b).pjt(dist) * (2.0 * refl_b * mass_b) / (mass_a + mass_b);
+        let new_vel_b = vel_b - (vel_b - vel_a).pjt(dist) * (2.0 * refl_a * mass_a) / (mass_a + mass_b);
+        self.masses[idx_a].set_vel(new_vel_a, dt);
+        self.masses[idx_b].set_vel(new_vel_b, dt);
     }
 
     /// Simulation step to calculate and update the model.
