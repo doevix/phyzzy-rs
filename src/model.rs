@@ -324,30 +324,46 @@ impl Model {
         self.apply_world_f(w_cfg, dt);
 
         // Find and collect the collisions here (bc the borrow checker gets mad doing it all together :c)
-        let mut collisions = Vec::new();
+        let mut m_collisions = Vec::new();
+        let mut s_collisions = Vec::new();
         for (idx, mass) in self.masses.iter().enumerate() {
+            // Check if mass is on a collision layer.
             let layer = self.collision_layers.iter().position(|layer| {
                 layer.masses.contains(&idx)
             });
 
             if let Some(l_idx) = layer {
+                // Find colliding masses, skip repeats.
                 for b_idx in &self.collision_layers[l_idx].masses {
                     let secondary = self.masses[*b_idx];
                     // Collision distance check.
                     if (mass.p_i - secondary.p_i).mag() < mass.r + secondary.r {
                         // Check if the pair already exists before adding it.
-                        if let None = collisions.iter().position(|coll| {
+                        if let None = m_collisions.iter().position(|coll| {
                             *coll == (idx, *b_idx) || *coll == (*b_idx, idx)
                         }) {
-                            collisions.push((idx, *b_idx));
+                            m_collisions.push((idx, *b_idx));
                         }
                     }
                 }
+                // Find colliding springs, skip if mass is attached to the spring.
+                for s_idx in &self.collision_layers[l_idx].springs {
+                    let spring = self.springs[*s_idx];
+                    // Check if mass is attached to the spring, if so, skip.
+                    if spring.get_ma() == *s_idx || spring.get_mb() == *s_idx { continue; }
+                    // Collision distance check.
+                    let m_a = self.masses[spring.get_ma()];
+                    let m_b = self.masses[spring.get_mb()];
+                    let d_ab = m_a.p_i - m_b.p_i;
+                    let d_ma = mass.p_i - m_a.p_i;
+                    let d_s = d_ma.pjt(d_ab.prp()).mag();
+                    if d_s < mass.r { s_collisions.push((idx, *s_idx)); }
+                }
             }
         }
-        // Handle collisiones.
+        // Handle collisions.
         if !paused {
-            for collision in collisions {
+            for collision in m_collisions {
                 self.mm_collision_handle(collision.0, collision.1, dt);
             }
         }
