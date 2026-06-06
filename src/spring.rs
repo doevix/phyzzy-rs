@@ -7,6 +7,8 @@ pub struct Spring {
     pub k: f64,
     /// dampening factor \[Ns/m\]
     pub d: f64,
+    /// reflection
+    pub refl: f64,
 
     m_a: usize,         // Mass A index
     m_b: usize,         // Mass B index
@@ -27,6 +29,7 @@ impl Spring {
             f_spring: 0.0,
             f_dampen: 0.0,
             cur_length: 0.0,
+            refl: 0.8,
         }
     }
 

@@ -281,7 +281,8 @@ impl Model {
         self.angle += self.w_dir_mul * self.wave_speed.abs() * dt;
     }
 
-    fn mm_collision_handle(&mut self, idx_a: usize, idx_b: usize, dt: f64) {
+    fn mm_collision_handle(&mut self, collision: (usize, usize), dt: f64) {
+        let (idx_a, idx_b) = collision;
         let (pos_a, rad_a) = (self.masses[idx_a].p_i, self.masses[idx_a].r);
         let (pos_b, rad_b) = (self.masses[idx_b].p_i, self.masses[idx_b].r);
 
@@ -313,6 +314,41 @@ impl Model {
         let new_vel_b = vel_b - (vel_b - vel_a).pjt(dist) * (2.0 * refl_a * mass_a) / (mass_a + mass_b);
         self.masses[idx_a].set_vel(new_vel_a, dt);
         self.masses[idx_b].set_vel(new_vel_b, dt);
+    }
+
+    fn ms_collision_handle(&mut self, collision: (usize, usize), dt: f64) {
+        let (m_idx, s_idx) = collision;
+        let mass = self.masses[m_idx];
+        let spring = self.springs[s_idx];
+        let m_a = self.masses[spring.get_ma()];
+        let m_b = self.masses[spring.get_mb()];
+        let mass_c = m_a.m + m_b.m;
+
+        let vel_m = mass.vel(dt);
+        let vel_a = m_a.vel(dt);
+        let vel_b = m_b.vel(dt);
+        let c_s = (m_a.p_i * m_a.m + m_b.p_i * m_b.m) / (m_a.m + m_b.m);
+        let c_s_o = (m_a.p_o * m_a.m + m_b.p_o * m_b.m) / (m_a.m + m_b.m);
+        let vel_c = (c_s - c_s_o) / dt;
+
+        // Position correction.
+        let d_ab = m_a.p_i - m_b.p_i;
+        let d_ma = mass.p_i - m_a.p_i;
+        let d_s = d_ma.pjt(d_ab.prp());
+        let correction = d_s - mass.r * d_s.unit();
+
+        self.masses[m_idx].p_i -= 0.5 * correction;
+        self.masses[spring.get_ma()].p_i += 0.5 * correction;
+        self.masses[spring.get_mb()].p_i += 0.5 * correction;
+
+        // Velocity deflections.
+        // Translational velocities.
+        let new_vel_m = vel_m - (vel_m - vel_c).pjt(d_s) * (2.0 * spring.refl * mass_c) / (mass.m + mass_c);
+        let new_vel_c = vel_c - (vel_c - vel_m).pjt(d_s) * (2.0 * mass.refl * mass.m) / (mass.m + mass_c);
+        self.masses[m_idx].set_vel(new_vel_m, dt);
+        // replace the translational velocity with the new one.
+        self.masses[spring.get_ma()].set_vel(vel_a - vel_c + new_vel_c, dt);
+        self.masses[spring.get_mb()].set_vel(vel_b - vel_c + new_vel_c, dt);
     }
 
     /// Simulation step to calculate and update the model.
@@ -350,21 +386,28 @@ impl Model {
                 for s_idx in &self.collision_layers[l_idx].springs {
                     let spring = self.springs[*s_idx];
                     // Check if mass is attached to the spring, if so, skip.
-                    if spring.get_ma() == *s_idx || spring.get_mb() == *s_idx { continue; }
+                    if spring.get_ma() == idx || spring.get_mb() == idx { continue; }
                     // Collision distance check.
                     let m_a = self.masses[spring.get_ma()];
                     let m_b = self.masses[spring.get_mb()];
                     let d_ab = m_a.p_i - m_b.p_i;
                     let d_ma = mass.p_i - m_a.p_i;
+                    let d_mb = mass.p_i - m_b.p_i;
+                    let d_sa = d_ma.pjt(d_ab).mag();
+                    let d_sb = d_mb.pjt(d_ab).mag();
                     let d_s = d_ma.pjt(d_ab.prp()).mag();
-                    if d_s < mass.r { s_collisions.push((idx, *s_idx)); }
+
+                    if d_s < mass.r && d_sa < d_ab.mag() && d_sb < d_ab.mag() { s_collisions.push((idx, *s_idx)); }
                 }
             }
         }
         // Handle collisions.
         if !paused {
             for collision in m_collisions {
-                self.mm_collision_handle(collision.0, collision.1, dt);
+                self.mm_collision_handle(collision, dt);
+            }
+            for collision in s_collisions {
+                self.ms_collision_handle(collision, dt);
             }
         }
 
