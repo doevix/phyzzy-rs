@@ -327,6 +327,8 @@ impl Model {
         let vel_m = mass.vel(dt);
         let vel_a = m_a.vel(dt);
         let vel_b = m_b.vel(dt);
+
+        // Center of mass.
         let c_s = (m_a.p_i * m_a.m + m_b.p_i * m_b.m) / (m_a.m + m_b.m);
         let c_s_o = (m_a.p_o * m_a.m + m_b.p_o * m_b.m) / (m_a.m + m_b.m);
         let vel_c = (c_s - c_s_o) / dt;
@@ -346,9 +348,13 @@ impl Model {
         let new_vel_m = vel_m - (vel_m - vel_c).pjt(d_s) * (2.0 * spring.refl * mass_c) / (mass.m + mass_c);
         let new_vel_c = vel_c - (vel_c - vel_m).pjt(d_s) * (2.0 * mass.refl * mass.m) / (mass.m + mass_c);
         self.masses[m_idx].set_vel(new_vel_m, dt);
-        // replace the translational velocity with the new one.
+        // Rotational velocities.
+
+
+        // Replace the translational velocity with the new one.
         self.masses[spring.get_ma()].set_vel(vel_a - vel_c + new_vel_c, dt);
         self.masses[spring.get_mb()].set_vel(vel_b - vel_c + new_vel_c, dt);
+
     }
 
     /// Simulation step to calculate and update the model.
