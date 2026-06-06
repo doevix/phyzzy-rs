@@ -373,6 +373,23 @@ impl Model {
             self.masses[spring.get_ma()].set_vel(vel_a - delta_vel_a, dt);
             self.masses[spring.get_mb()].set_vel(vel_b - delta_vel_b, dt);
 
+            // Tangential friction.
+            let tangent =  d_s_u.prp_l();
+            let rel_vel_t = rel_vel.dot(tangent);
+            let j_t_stop = -rel_vel_t / (inv_m + inv_m_a + inv_m_b);
+            let j_t = if j_t_stop.abs() <= spring.mu_s * j.abs() {
+                j_t_stop
+            } else {
+                spring.mu_k * j.abs() * -rel_vel_t.signum()
+            };
+
+            let v_m = self.masses[m_idx].vel(dt);
+            let v_a = self.masses[spring.get_ma()].vel(dt);
+            let v_b = self.masses[spring.get_mb()].vel(dt);
+
+            self.masses[m_idx].set_vel(v_m + tangent * (j_t / mass.m), dt);
+            self.masses[spring.get_ma()].set_vel(v_a - tangent * (j_t * w_a) / m_a.m, dt);
+            self.masses[spring.get_mb()].set_vel(v_b - tangent * (j_t * w_b) / m_b.m, dt);
         }
     }
 
