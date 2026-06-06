@@ -283,37 +283,52 @@ impl Model {
 
     fn mm_collision_handle(&mut self, collision: (usize, usize), dt: f64) {
         let (idx_a, idx_b) = collision;
-        let (pos_a, rad_a) = (self.masses[idx_a].p_i, self.masses[idx_a].r);
-        let (pos_b, rad_b) = (self.masses[idx_b].p_i, self.masses[idx_b].r);
 
-        let fixed_a = self.masses[idx_a].fixed;
-        let fixed_b = self.masses[idx_b].fixed;
+        let mass_a = self.masses[idx_a];
+        let mass_b = self.masses[idx_b];
 
-        let vel_a = self.masses[idx_a].vel(dt);
-        let vel_b = self.masses[idx_b].vel(dt);
+        let vel_a = mass_a.vel(dt);
+        let vel_b = mass_b.vel(dt);
+        let rel_vel = vel_a - vel_b;
 
-        let dist = pos_a - pos_b;
-        let correct_dist = (rad_a + rad_b) * dist.unit();
+        let dist = mass_a.p_i - mass_b.p_i;
+        let norm = dist.unit();
+        let correct_dist = (mass_a.r + mass_b.r) * norm;
         let delta_pos = dist - correct_dist;
+        let rel_vel_n = rel_vel.dot(norm);
 
-        // Make sure fixed masses don't get pulled around by collisions.
-        if !fixed_a && !fixed_b {
-            self.masses[idx_a].p_i -= delta_pos * 0.5;
-            self.masses[idx_b].p_i += delta_pos * 0.5;
-        } else if !fixed_a && fixed_b {
-            self.masses[idx_a].p_i -= delta_pos;
-        } else if fixed_a && !fixed_b {
-            self.masses[idx_b].p_i -= delta_pos;
+        // Correction.
+        self.masses[idx_a].p_i -= delta_pos * 0.5;
+        self.masses[idx_b].p_i += delta_pos * 0.5;
+
+        if rel_vel_n < 0.0 {
+            let refl = (mass_a.refl + mass_b.refl) / 2.0;
+            let mu_s = (mass_a.mu_s + mass_b.mu_s) / 2.0;
+            let mu_k = (mass_a.mu_k + mass_b.mu_k) / 2.0;
+            let inv_m_a = 1.0 / mass_a.m;
+            let inv_m_b = 1.0 / mass_b.m;
+
+            // Deflections.
+            let j = -(1.0 + refl) * rel_vel_n / (inv_m_a + inv_m_b);
+            self.masses[idx_a].set_vel(vel_a + norm * (j * inv_m_a), dt);
+            self.masses[idx_b].set_vel(vel_b - norm * (j * inv_m_b), dt);
+
+            // Surface friction.
+            let tangent = norm.prp_l();
+            let rel_vel_t = rel_vel.dot(tangent);
+            let j_t_stop = -rel_vel_t / (inv_m_a + inv_m_b);
+
+            let j_t = if j_t_stop.abs() <= mu_s * j.abs() {
+                j_t_stop
+            } else {
+                mu_k * j.abs() * -rel_vel_t.signum()
+            };
+
+            let vel_a = self.masses[idx_a].vel(dt);
+            let vel_b = self.masses[idx_b].vel(dt);
+            self.masses[idx_a].set_vel(vel_a + tangent * (j_t * inv_m_a), dt);
+            self.masses[idx_b].set_vel(vel_b - tangent * (j_t * inv_m_b), dt);
         }
-
-        let refl_a = self.masses[idx_a].refl;
-        let refl_b = self.masses[idx_b].refl;
-        let mass_a = self.masses[idx_a].m;
-        let mass_b = self.masses[idx_b].m;
-        let new_vel_a = vel_a - (vel_a - vel_b).pjt(dist) * (2.0 * refl_b * mass_b) / (mass_a + mass_b);
-        let new_vel_b = vel_b - (vel_b - vel_a).pjt(dist) * (2.0 * refl_a * mass_a) / (mass_a + mass_b);
-        self.masses[idx_a].set_vel(new_vel_a, dt);
-        self.masses[idx_b].set_vel(new_vel_b, dt);
     }
 
     fn ms_collision_handle(&mut self, collision: (usize, usize), dt: f64) {
@@ -339,7 +354,6 @@ impl Model {
         self.masses[spring.get_mb()].p_i += 0.5 * correction;
 
         // Velocity deflections.
-        // Rotational velocities.
         let t = -d_ma.dot(d_ab) / d_ab.dot(d_ab);
         let t = t.clamp(0.0, 1.0);
         // Mass weights
