@@ -322,16 +322,10 @@ impl Model {
         let spring = self.springs[s_idx];
         let m_a = self.masses[spring.get_ma()];
         let m_b = self.masses[spring.get_mb()];
-        let mass_c = m_a.m + m_b.m;
 
         let vel_m = mass.vel(dt);
         let vel_a = m_a.vel(dt);
         let vel_b = m_b.vel(dt);
-
-        // Center of mass.
-        let c_s = (m_a.p_i * m_a.m + m_b.p_i * m_b.m) / (m_a.m + m_b.m);
-        let c_s_o = (m_a.p_o * m_a.m + m_b.p_o * m_b.m) / (m_a.m + m_b.m);
-        let vel_c = (c_s - c_s_o) / dt;
 
         // Position correction.
         let d_ab = m_a.p_i - m_b.p_i;
