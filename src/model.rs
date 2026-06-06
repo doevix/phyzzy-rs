@@ -25,31 +25,73 @@ impl std::fmt::Display for PhyzzyModelError {
 
 impl std::error::Error for PhyzzyModelError {}
 
+// Collisions: Model objects can collide with each other if they are on the same collision layer.
+// Stack of a collision layer. Managed internally only by the Model.
+pub(crate) struct CollisionLayer {
+    masses: Vec<usize>,
+    springs: Vec<usize>,
+}
+
+impl CollisionLayer {
+    pub(crate) fn new() -> Self {
+        Self {
+            masses: Vec::new(),
+            springs: Vec::new(),
+        }
+    }
+    // Add a mass's index to the layer.
+    pub(crate) fn push_mass(&mut self, idx: usize) {
+        if !self.masses.contains(&idx) {
+            self.masses.push(idx);
+        }
+    }
+    // Add a spring's index to the layer.
+    pub(crate) fn push_spring(&mut self, idx: usize) {
+        if !self.springs.contains(&idx) {
+            self.springs.push(idx);
+        }
+    }
+}
+
 /// The model struct holds the model made of springs and masses.
 pub struct Model {
+    /// Rate at which the angle increases or decreases.
     pub wave_speed: f64,
+    /// Waveform amplitude. Should only be at a value between 0 and 1.
     pub wave_amplitude: f64,
+    /// Angle of the wave form..
     pub angle: f64,
+    /// Determines if the gravity should be completely ignored.
     pub ignore_g: bool,
-    dir_mul: f64,
-    muscles: Vec<SpringActuator>,
-    bladders: Vec<MassActuator>,
+
+    // Defines the direction in which the waveform should be moving.
+    w_dir_mul: f64,
+
+    // Masses of the model's graph (nodes)
     masses: Vec<Mass>,
+    // Springs of the model's graph (edges)
     springs: Vec<Spring>,
 
+    // Actuators
+    muscles: Vec<SpringActuator>,
+    bladders: Vec<MassActuator>,
+
+    // Collision layers
+    collision_layers: Vec<CollisionLayer>,
 }
 
 impl Model {
     pub fn new(wave_speed: f64, wave_amplitude: f64) -> Self {
         Self {
             wave_speed, wave_amplitude,
-            dir_mul: 1.0,
+            w_dir_mul: 1.0,
             ignore_g: false,
             angle: 0.0,
             muscles: Vec::new(),
             bladders: Vec::new(),
             masses: Vec::new(),
             springs: Vec::new(),
+            collision_layers: Vec::new(),
         }
     }
 
@@ -80,12 +122,27 @@ impl Model {
         Ok(self.springs.len())
     }
 
+    /// Creates a new collision layer.
+    pub fn new_collision_layer(&mut self) {
+        self.collision_layers.push(CollisionLayer::new());
+    }
+
+    /// Adds mass to defined collision layer.
+    pub fn mass_to_collision_layer(&mut self, layer: usize, idx: usize) {
+        self.collision_layers[layer].push_mass(idx);
+    }
+
+    /// Adds spring to defined collision layer.
+    pub fn spring_to_collision_layer(&mut self, layer: usize, idx: usize) {
+        self.collision_layers[layer].push_spring(idx);
+    }
+
     /// Toggle the need to ignore gravity without the need to modify it.
     pub fn toggle_g(&mut self) {
         self.ignore_g = !self.ignore_g;
     }
 
-    /// Create a new muscle, return the number of muscles present in the model.
+    /// Create a new muscle, return the number of muscles present in the model.dir_mul
     pub fn new_muscle(&mut self, muscle_type: SpringActuatorType, spring_idx: usize, phase: f64, sense: f64) -> usize {
         let muscle = SpringActuator::new(muscle_type, spring_idx, &self.springs[spring_idx], phase, sense);
         self.muscles.push(muscle);
@@ -163,6 +220,13 @@ impl Model {
         self.masses[idx].p_i = pos;
     }
 
+    pub fn fix_mass(&mut self, idx: usize) {
+        self.masses[idx].fixed = true;
+    }
+    pub fn free_mass(&mut self, idx: usize) {
+        self.masses[idx].fixed = false;
+    }
+
     pub fn hold_mass(&mut self, idx: usize) {
         self.masses[idx].held = true;
     }
@@ -201,7 +265,7 @@ impl Model {
     }
 
     pub fn toggle_wave_dir(&mut self) {
-        self.dir_mul *= -1.0;
+        self.w_dir_mul *= -1.0;
     }
 
     // Advances the wave form, internal use only.
@@ -214,21 +278,191 @@ impl Model {
             bladder.mass_wave_mut(&mut self.masses, self.wave_amplitude, self.angle);
         }
 
-        self.angle += self.dir_mul * self.wave_speed.abs() * dt;
+        self.angle += self.w_dir_mul * self.wave_speed.abs() * dt;
+    }
+
+    fn mm_collision_handle(&mut self, collision: (usize, usize), dt: f64) {
+        let (idx_a, idx_b) = collision;
+
+        let mass_a = self.masses[idx_a];
+        let mass_b = self.masses[idx_b];
+
+        let vel_a = mass_a.vel(dt);
+        let vel_b = mass_b.vel(dt);
+        let rel_vel = vel_a - vel_b;
+
+        let dist = mass_a.p_i - mass_b.p_i;
+        let norm = dist.unit();
+        let correct_dist = (mass_a.r + mass_b.r) * norm;
+        let delta_pos = dist - correct_dist;
+        let rel_vel_n = rel_vel.dot(norm);
+
+        // Correction.
+        self.masses[idx_a].p_i -= delta_pos * 0.5;
+        self.masses[idx_b].p_i += delta_pos * 0.5;
+
+        if rel_vel_n < 0.0 {
+            let refl = (mass_a.refl + mass_b.refl) / 2.0;
+            let mu_s = (mass_a.mu_s + mass_b.mu_s) / 2.0;
+            let mu_k = (mass_a.mu_k + mass_b.mu_k) / 2.0;
+            let inv_m_a = 1.0 / mass_a.m;
+            let inv_m_b = 1.0 / mass_b.m;
+
+            // Deflections.
+            let j = -(1.0 + refl) * rel_vel_n / (inv_m_a + inv_m_b);
+            self.masses[idx_a].set_vel(vel_a + norm * (j * inv_m_a), dt);
+            self.masses[idx_b].set_vel(vel_b - norm * (j * inv_m_b), dt);
+
+            // Surface friction.
+            let tangent = norm.prp_l();
+            let rel_vel_t = rel_vel.dot(tangent);
+            let j_t_stop = -rel_vel_t / (inv_m_a + inv_m_b);
+
+            let j_t = if j_t_stop.abs() <= mu_s * j.abs() {
+                j_t_stop
+            } else {
+                mu_k * j.abs() * -rel_vel_t.signum()
+            };
+
+            let vel_a = self.masses[idx_a].vel(dt);
+            let vel_b = self.masses[idx_b].vel(dt);
+            self.masses[idx_a].set_vel(vel_a + tangent * (j_t * inv_m_a), dt);
+            self.masses[idx_b].set_vel(vel_b - tangent * (j_t * inv_m_b), dt);
+        }
+    }
+
+    fn ms_collision_handle(&mut self, collision: (usize, usize), dt: f64) {
+        let (m_idx, s_idx) = collision;
+        let mass = self.masses[m_idx];
+        let spring = self.springs[s_idx];
+        let m_a = self.masses[spring.get_ma()];
+        let m_b = self.masses[spring.get_mb()];
+
+        let vel_m = mass.vel(dt);
+        let vel_a = m_a.vel(dt);
+        let vel_b = m_b.vel(dt);
+
+        // Position correction.
+        let d_ab = m_a.p_i - m_b.p_i;
+        let d_ma = mass.p_i - m_a.p_i;
+        let d_s = d_ma.pjt(d_ab.prp());
+        let d_s_u = d_s.unit();
+        let correction = d_s - mass.r * d_s.unit();
+
+        self.masses[m_idx].p_i -= 0.5 * correction;
+        self.masses[spring.get_ma()].p_i += 0.5 * correction;
+        self.masses[spring.get_mb()].p_i += 0.5 * correction;
+
+        // Velocity deflections.
+        let t = -d_ma.dot(d_ab) / d_ab.dot(d_ab);
+        let t = t.clamp(0.0, 1.0);
+        // Mass weights
+        let w_b = t;
+        let w_a = 1.0 - t;
+        // Velocities
+        let vel_contact = vel_a * w_a + vel_b * w_b;
+        let rel_vel = vel_m - vel_contact;
+        let rel_vel_n = rel_vel.dot(d_s_u);
+        // When approaching, resolve.
+        if rel_vel_n < 0.0 {
+            let inv_m = 1.0 / mass.m;
+            let inv_m_a = w_a * w_a / m_a.m;
+            let inv_m_b = w_b * w_b / m_b.m;
+
+            let j = -(1.0 + mass.refl) * rel_vel_n / (inv_m + inv_m_a + inv_m_b);
+
+            // Adjust mass velocity.
+            let delta_vel_m = d_s_u * (j / mass.m);
+            self.masses[m_idx].set_vel(vel_m + delta_vel_m, dt);
+
+            // Adjust spring masses' velocities
+            let delta_vel_a = d_s_u * (j * w_a / m_a.m);
+            let delta_vel_b = d_s_u * (j * w_b / m_b.m);
+            self.masses[spring.get_ma()].set_vel(vel_a - delta_vel_a, dt);
+            self.masses[spring.get_mb()].set_vel(vel_b - delta_vel_b, dt);
+
+            // Tangential friction.
+            let tangent =  d_s_u.prp_l();
+            let rel_vel_t = rel_vel.dot(tangent);
+            let j_t_stop = -rel_vel_t / (inv_m + inv_m_a + inv_m_b);
+            let j_t = if j_t_stop.abs() <= spring.mu_s * j.abs() {
+                j_t_stop
+            } else {
+                spring.mu_k * j.abs() * -rel_vel_t.signum()
+            };
+
+            let v_m = self.masses[m_idx].vel(dt);
+            let v_a = self.masses[spring.get_ma()].vel(dt);
+            let v_b = self.masses[spring.get_mb()].vel(dt);
+
+            self.masses[m_idx].set_vel(v_m + tangent * (j_t / mass.m), dt);
+            self.masses[spring.get_ma()].set_vel(v_a - tangent * (j_t * w_a) / m_a.m, dt);
+            self.masses[spring.get_mb()].set_vel(v_b - tangent * (j_t * w_b) / m_b.m, dt);
+        }
     }
 
     /// Simulation step to calculate and update the model.
     pub fn step(&mut self, dt: f64, world: &World, w_cfg: &WorldConfig, paused: bool) {
-        let dt2 = dt * dt;
 
         // Force application.
         self.clear_forces();
         self.apply_spring_f(dt);
         self.apply_world_f(w_cfg, dt);
 
+        // Find and collect the collisions here (bc the borrow checker gets mad doing it all together :c)
+        let mut m_collisions = Vec::new();
+        let mut s_collisions = Vec::new();
+        for (idx, mass) in self.masses.iter().enumerate() {
+            // Check if mass is on a collision layer.
+            let layer = self.collision_layers.iter().position(|layer| {
+                layer.masses.contains(&idx)
+            });
 
+            if let Some(l_idx) = layer {
+                // Find colliding masses, skip repeats.
+                for b_idx in &self.collision_layers[l_idx].masses {
+                    let secondary = self.masses[*b_idx];
+                    // Collision distance check.
+                    if (mass.p_i - secondary.p_i).mag() < mass.r + secondary.r {
+                        // Check if the pair already exists before adding it.
+                        if let None = m_collisions.iter().position(|coll| {
+                            *coll == (idx, *b_idx) || *coll == (*b_idx, idx)
+                        }) {
+                            m_collisions.push((idx, *b_idx));
+                        }
+                    }
+                }
+                // Find colliding springs, skip if mass is attached to the spring.
+                for s_idx in &self.collision_layers[l_idx].springs {
+                    let spring = self.springs[*s_idx];
+                    // Check if mass is attached to the spring, if so, skip.
+                    if spring.get_ma() == idx || spring.get_mb() == idx { continue; }
+                    // Collision distance check.
+                    let m_a = self.masses[spring.get_ma()];
+                    let m_b = self.masses[spring.get_mb()];
+                    let d_ab = m_a.p_i - m_b.p_i;
+                    let d_ma = mass.p_i - m_a.p_i;
+                    let d_mb = mass.p_i - m_b.p_i;
+                    let d_sa = d_ma.pjt(d_ab).mag();
+                    let d_sb = d_mb.pjt(d_ab).mag();
+                    let d_s = d_ma.pjt(d_ab.prp()).mag();
+
+                    if d_s < mass.r && d_sa < d_ab.mag() && d_sb < d_ab.mag() { s_collisions.push((idx, *s_idx)); }
+                }
+            }
+        }
+        // Handle collisions.
+        if !paused {
+            for collision in m_collisions {
+                self.mm_collision_handle(collision, dt);
+            }
+            for collision in s_collisions {
+                self.ms_collision_handle(collision, dt);
+            }
+        }
 
         // Step calculation.
+        let dt2 = dt * dt;
         for mass in &mut self.masses {
 
             // Ensure the integrator doesn't do anything to held or fixed masses

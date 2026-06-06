@@ -7,6 +7,8 @@ pub struct Spring {
     pub k: f64,
     /// dampening factor \[Ns/m\]
     pub d: f64,
+    /// reflection
+    pub refl: f64,
 
     m_a: usize,         // Mass A index
     m_b: usize,         // Mass B index
@@ -15,8 +17,8 @@ pub struct Spring {
     cur_length: f64,    // The current spring length. For display purposes only.
 
     // TODO add these somehow when dynamic collisions are added.
-    // pub mu_s: f64,       // Spring stiction when collisions enabled.
-    // pub mu_k: f64,       // Spring sliction when collisions enabled.
+    pub mu_s: f64,       // Spring stiction when collisions enabled.
+    pub mu_k: f64,       // Spring sliction when collisions enabled.
 }
 
 impl Spring {
@@ -27,6 +29,9 @@ impl Spring {
             f_spring: 0.0,
             f_dampen: 0.0,
             cur_length: 0.0,
+            refl: 0.8,
+            mu_s: 0.6,
+            mu_k: 0.3
         }
     }
 
