@@ -337,6 +337,7 @@ impl Model {
         let d_ab = m_a.p_i - m_b.p_i;
         let d_ma = mass.p_i - m_a.p_i;
         let d_s = d_ma.pjt(d_ab.prp());
+        let d_s_u = d_s.unit();
         let correction = d_s - mass.r * d_s.unit();
 
         self.masses[m_idx].p_i -= 0.5 * correction;
@@ -344,17 +345,35 @@ impl Model {
         self.masses[spring.get_mb()].p_i += 0.5 * correction;
 
         // Velocity deflections.
-        // Translational velocities.
-        let new_vel_m = vel_m - (vel_m - vel_c).pjt(d_s) * (2.0 * spring.refl * mass_c) / (mass.m + mass_c);
-        let new_vel_c = vel_c - (vel_c - vel_m).pjt(d_s) * (2.0 * mass.refl * mass.m) / (mass.m + mass_c);
-        self.masses[m_idx].set_vel(new_vel_m, dt);
         // Rotational velocities.
+        let t = -d_ma.dot(d_ab) / d_ab.dot(d_ab);
+        let t = t.clamp(0.0, 1.0);
+        // Mass weights
+        let w_b = t;
+        let w_a = 1.0 - t;
+        // Velocities
+        let vel_contact = vel_a * w_a + vel_b * w_b;
+        let rel_vel = vel_m - vel_contact;
+        let rel_vel_n = rel_vel.dot(d_s_u);
+        // When approaching, resolve.
+        if rel_vel_n < 0.0 {
+            let inv_m = 1.0 / mass.m;
+            let inv_m_a = w_a * w_a / m_a.m;
+            let inv_m_b = w_b * w_b / m_b.m;
 
+            let j = -(1.0 + mass.refl) * rel_vel_n / (inv_m + inv_m_a + inv_m_b);
 
-        // Replace the translational velocity with the new one.
-        self.masses[spring.get_ma()].set_vel(vel_a - vel_c + new_vel_c, dt);
-        self.masses[spring.get_mb()].set_vel(vel_b - vel_c + new_vel_c, dt);
+            // Adjust mass velocity.
+            let delta_vel_m = d_s_u * (j / mass.m);
+            self.masses[m_idx].set_vel(vel_m + delta_vel_m, dt);
 
+            // Adjust spring masses' velocities
+            let delta_vel_a = d_s_u * (j * w_a / m_a.m);
+            let delta_vel_b = d_s_u * (j * w_b / m_b.m);
+            self.masses[spring.get_ma()].set_vel(vel_a - delta_vel_a, dt);
+            self.masses[spring.get_mb()].set_vel(vel_b - delta_vel_b, dt);
+
+        }
     }
 
     /// Simulation step to calculate and update the model.
